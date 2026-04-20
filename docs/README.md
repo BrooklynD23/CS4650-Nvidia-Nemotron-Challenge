@@ -1,21 +1,45 @@
-# Docs Index
+# Docs Router
 
-## Canonical Planning Docs
+Last Updated: 2026-04-20
 
-- `plan_v0.2.md` (source of truth)
-- `plan_review.md` (expert review of v0.1; key risks + corrections)
-- `plan_v0.1.md` (historical)
+Use this file as the entry point for agents and contributors. Route to the subfolder that matches the task.
 
-## Living Docs (keep updated as code lands)
+## Routing By Need
 
-- `COMPETITION.md`: What we believe the rules/dataset/constraints are (with links), plus open questions.
-- `ARCHITECTURE.md`: End-to-end system design (data -> training -> eval -> submission).
-- `NOTEBOOKS.md`: Notebook registry and external reference notebooks we are reproducing.
-- `SPRINTS.md`: Sprint goals and GitHub issue map.
-- `ADVERSARIAL_REVIEW.md`: Critical review of our current MVP and plan mismatches vs the actual task shape.
+- Planning, scope, phase gates, dependencies:
+  `docs/planning/`
+- Competition constraints and system design:
+  `docs/architecture/`
+- Critical reviews and risk pressure-tests:
+  `docs/analysis/`
+- Sprint execution, issues, notebooks:
+  `docs/execution/`
 
-## Update Protocol
+## Canonical Docs
 
-- If you add a new notebook: add it to `NOTEBOOKS.md`.
-- If you change evaluation logic or dataset splits: update `ARCHITECTURE.md` and `COMPETITION.md`.
-- If you start/finish a sprint: update `SPRINTS.md` (and close issues).
+- Execution plan (source of truth):
+  `docs/planning/plan_v0.2.md`
+- Plan review rationale:
+  `docs/planning/plan_review.md`
+- Competition constraints:
+  `docs/architecture/COMPETITION.md`
+- System architecture:
+  `docs/architecture/ARCHITECTURE.md`
+- Adversarial review:
+  `docs/analysis/ADVERSARIAL_REVIEW.md`
+- Sprint-to-issue map:
+  `docs/execution/SPRINTS.md`
+- Notebook registry:
+  `docs/execution/NOTEBOOKS.md`
+
+## Folder Index
+
+- `docs/planning/README.md`
+- `docs/architecture/README.md`
+- `docs/analysis/README.md`
+- `docs/execution/README.md`
+
+## Drift Guard
+
+- Whenever you modify any doc under `docs/`, update `Last Updated` in this file.
+- If you move docs, update routing paths and canonical paths in this file and in `AGENTS.md`.

@@ -1,6 +1,6 @@
 # Expert Panel Review: plan_v0.1.md
 
-**Document Reviewed**: `docs/plan_v0.1.md` (NVIDIA Nemotron Model Reasoning Challenge - Research & MVP Plan)
+**Document Reviewed**: `docs/planning/plan_v0.1.md` (retired) (NVIDIA Nemotron Model Reasoning Challenge - Research & MVP Plan)
 **Review Date**: 2026-04-19
 **Overall Score**: **6.8 / 10**
 

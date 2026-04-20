@@ -3,7 +3,7 @@
 **Version**: 0.2 (Post Expert Review)
 **Date**: 2026-04-19
 **Status**: Active
-**Previous**: [plan_v0.1.md](plan_v0.1.md) | **Review**: [plan_review.md](plan_review.md)
+**Previous**: v0.1 (retired) | **Review**: [plan_review.md](plan_review.md)
 
 ---
 
@@ -146,11 +146,12 @@ CS4650-Nvidia-Nemotron-Challenge/
 ├── adapters/                     # Saved LoRA adapter weights
 │   └── .gitkeep
 └── docs/
-    ├── plan_v0.1.md              # Original draft
-    ├── plan_v0.2.md              # This file
-    ├── plan_review.md            # Expert panel review
-    ├── research_notes.md
-    └── approach_comparison.md
+    ├── planning/
+    │   ├── plan_v0.2.md          # This file
+    │   └── plan_review.md        # Expert panel review
+    ├── architecture/
+    ├── analysis/
+    └── execution/
 ```
 
 ### 0.2 Core Dependencies

@@ -1,6 +1,6 @@
 # Adversarial Review (MVP + Approach)
 
-This is an intentionally critical review of our current MVP and the architecture implied by `docs/plan_v0.2.md`, grounded in what we can observe about the competition task shape and what has worked for top community solutions.
+This is an intentionally critical review of our current MVP and the architecture implied by `docs/planning/plan_v0.2.md`, grounded in what we can observe about the competition task shape and what has worked for top community solutions.
 
 ## What The Competition Actually Looks Like (High-Signal Clues)
 
@@ -19,7 +19,7 @@ This makes the competition closer to **program induction / rule inference** than
 Current repo (before this init work) was effectively:
 
 - `README.md`
-- planning docs (`docs/plan_v0.2.md` etc.)
+- planning docs (`docs/planning/plan_v0.2.md` etc.)
 
 No ingestion, no baseline eval, no reproducible training, no packaging.
 
@@ -124,4 +124,3 @@ What we can still do immediately:
 4. teacher + augmentation pipeline per category (small, verifiable solvers)
 5. LoRA SFT pipeline constrained to rank <= 32
 6. packaging + submission dry-run
-
