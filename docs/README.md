@@ -25,12 +25,16 @@ Use this file as the entry point for agents and contributors. Route to the subfo
   `docs/architecture/COMPETITION.md`
 - System architecture:
   `docs/architecture/ARCHITECTURE.md`
+- Non-technical concepts explainer:
+  `docs/architecture/CONCEPTS_EXPLAINED_NON_TECHNICAL.md`
 - Adversarial review:
   `docs/analysis/ADVERSARIAL_REVIEW.md`
 - Sprint-to-issue map:
   `docs/execution/SPRINTS.md`
 - Notebook registry:
   `docs/execution/NOTEBOOKS.md`
+- Issue review workflow:
+  `docs/execution/ISSUE_REVIEW_HARNESS.md`
 
 ## Folder Index
 

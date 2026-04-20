@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Notebook and issue workflow
+    url: https://github.com/BrooklynD23/CS4650-Nvidia-Nemotron-Challenge/blob/main/docs/execution/ISSUE_REVIEW_HARNESS.md
+    about: Read the issue and review workflow before creating or closing an execution issue.
