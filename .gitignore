@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtualenvs
+.venv/
+venv/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Local env / secrets
+.env
+
+# Experiment tracking
+wandb/
+mlruns/
+
+# Data + model artifacts (keep out of git)
+data/**
+!data/.gitkeep
+
+adapters/**
+!adapters/.gitkeep
+adapters/**/*.safetensors
+adapters/**/*.pt
+adapters/**/*.bin
+
+checkpoints/
+outputs/
+runs/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Local assistant/agent artifacts
+.codex

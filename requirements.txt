@@ -1,0 +1,23 @@
+# Core ML stack (pin torch for reproducibility; CUDA build depends on environment)
+torch==2.4.0
+
+# HF ecosystem
+transformers>=4.48.3
+datasets>=2.20.0
+accelerate>=1.0.0
+peft>=0.14.0
+trl>=0.16.0
+
+# Quantization / efficiency (optional; only needed for QLoRA paths)
+bitsandbytes>=0.45.0
+
+# Tooling
+wandb
+kaggle
+jupyter
+
+# Data / plotting
+numpy
+pandas
+matplotlib
+

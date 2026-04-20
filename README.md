@@ -1,2 +1,9 @@
-# CS4650-Nvidia-Nemotron-Challenge
-Capstone Project for CS4650 Capstone Project: To compete in Kaggle's Nvidia Nomtron Model Reasoning Challenge
+# CS4650 Nvidia Nemotron Challenge
+
+CS4650 capstone project repo for competing in Kaggle's **NVIDIA Nemotron Model Reasoning Challenge**.
+
+Start here:
+
+- `AGENTS.md` (doc router for assistants)
+- `docs/plan_v0.2.md` (execution plan)
+- `docs/README.md` (documentation index)
