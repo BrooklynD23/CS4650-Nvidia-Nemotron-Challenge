@@ -30,17 +30,17 @@ Every local notebook must include the following sections inside the notebook:
 
 | Notebook | Parent issue | Purpose | Status |
 |---|---|---|---|
-| `notebooks/00_competition_constraints_and_rules.ipynb` | `#14` | Verify rules, model constraints, evaluation rules, and deadlines | scaffolded |
-| `notebooks/01_external_baselines_and_design_deltas.ipynb` | `#16` | Compare Tong, `konbu17`, and current repo assumptions | scaffolded |
-| `notebooks/02_dataset_schema_and_eda.ipynb` | `#17` | Explain dataset schema, category shape, and normalization plan | scaffolded |
-| `notebooks/03_validation_and_golden_set.ipynb` | `#18` | Define validation split and golden-set regression policy | scaffolded |
-| `notebooks/04_baseline_eval_and_normalization.ipynb` | `#19` | Define exact-match eval records and normalization rules | scaffolded |
+| `notebooks/00_competition_constraints_and_rules.ipynb` | `#14` | Verify rules, model constraints, evaluation rules, and deadlines | validated |
+| `notebooks/01_external_baselines_and_design_deltas.ipynb` | `#16` | Compare Tong, `konbu17`, and current repo assumptions | validated |
+| `notebooks/02_dataset_schema_and_eda.ipynb` | `#17` | Explain dataset schema, category shape, and normalization plan | validated |
+| `notebooks/03_validation_and_golden_set.ipynb` | `#18` | Define validation split and golden-set regression policy | validated |
+| `notebooks/04_baseline_eval_and_normalization.ipynb` | `#19` | Define exact-match eval records and normalization rules | active |
 | `notebooks/05_prompting_and_decode_sweeps.ipynb` | `#21` | Compare prompt templates and decode settings | scaffolded |
 | `notebooks/06_trajectory_collection_and_error_slices.ipynb` | `#22` | Document failure slices and targeted follow-up loops | scaffolded |
 | `notebooks/07_solver_framework_design.ipynb` | `#23` | Specify the category-aware solver interface and fallback policy | scaffolded |
 | `notebooks/08_synthetic_data_recipe.ipynb` | `#24` | Specify teacher, filter, and provenance rules for synthetic data | scaffolded |
 | `notebooks/09_sft_runbook_and_masking.ipynb` | `#25` | Specify LoRA/QLoRA runbook, masking, and checkpoint policy | scaffolded |
-| `notebooks/10_submission_packaging_and_provenance.ipynb` | `#20` | Specify packaging, dry-run validation, and provenance metadata | scaffolded |
+| `notebooks/10_submission_packaging_and_provenance.ipynb` | `#20` | Specify packaging, dry-run validation, and provenance metadata | validated |
 
 ## Cross-Notebook Architectural Decisions
 
@@ -63,3 +63,4 @@ Every local notebook must include the following sections inside the notebook:
 - Update this file whenever a notebook changes state from `scaffolded` to `active`, `validated`, or `superseded`.
 - Link the corresponding issue and artifact pointers in the issue description and closing comment.
 - If a notebook causes a contract change, also update `docs/architecture/ARCHITECTURE.md` and reference the change in `docs/execution/SPRINTS.md`.
+- The local commit guard in `.githooks/` uses this registry as one of its accountability surfaces; stale notebook state here is treated as process drift, not just missing prose.

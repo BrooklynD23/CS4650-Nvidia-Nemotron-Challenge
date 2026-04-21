@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+PYTHON_BIN="$ROOT/.venv/bin/python"
+
+if [[ ! -x "$PYTHON_BIN" ]]; then
+  PYTHON_BIN="python3"
+fi
+
+exec "$PYTHON_BIN" "$ROOT/scripts/commit_guard.py" commit-msg "$1"

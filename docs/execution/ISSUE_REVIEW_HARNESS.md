@@ -86,6 +86,31 @@ Reviewers should reject the issue if any of the following are missing:
 - Agent owners do not self-close architecture-impact issues.
 - A notebook issue is ready to close when the notebook executes without error or, for spec-only notebooks, when all checklist items are present and the reviewer explicitly signs off.
 - A harness issue is ready to close when the template or doc exists and the workflow is referenced from `docs/execution/SPRINTS.md` or `docs/execution/NOTEBOOKS.md`.
+- An issue may close with remaining external blockers only when the issue's own acceptance criteria require documenting those blockers and the unblock steps explicitly. Issue `#14` is the template for that pattern.
+
+## Local Commit Guard
+
+This repo ships versioned git hooks under `.githooks/` to reduce two common drifts:
+
+- **Documentation drift**: implementation changes land without a corresponding notebook/plan/registry/review note update.
+- **Issue drift**: commits touch a mapped issue deliverable but the commit message never references the issue.
+
+Install them once per clone:
+
+```bash
+./scripts/install_git_hooks.sh
+```
+
+Hook behavior:
+
+- `pre-commit` blocks staged `src/` / `tests/` changes for mapped issues unless an accountability doc is staged in the same commit.
+- `commit-msg` blocks commits whose staged files map to issue-owned deliverables but whose message does not reference the touched issue ids.
+- `Closes #N` / `Fixes #N` / `Resolves #N` may only be used when the staged files actually map to `#N`.
+
+Commit message convention:
+
+- Use `Refs #N` for in-progress work that should keep the issue open.
+- Use `Closes #N` only when the deliverable path and accountability docs are updated in the same commit.
 
 ## Suggested Comment Template
 
