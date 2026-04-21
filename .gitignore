@@ -46,3 +46,5 @@ Thumbs.db
 # Local assistant/agent artifacts
 .codex
 .claude
+claude-progress.txt
+init.sh
