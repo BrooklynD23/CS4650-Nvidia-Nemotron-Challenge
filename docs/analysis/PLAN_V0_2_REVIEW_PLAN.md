@@ -278,7 +278,7 @@ Completed the eval-harness planning pass for issues `#18` and `#19`. The two pla
 Key choices recorded:
 - Validation and golden artifacts are row-level JSONL with `example_id`, `category`, `split`, `dataset_version`, and selection provenance.
 - Golden regression is strict: any single golden miss blocks promotion, regardless of aggregate validation gains.
-- Baseline eval artifacts must capture `run_id`, `model_id`, `prompt_template_id`, `normalization_version`, `seed`, `latency_ms`, `tokens_in`, and `tokens_out`.
+- Baseline eval artifacts must capture `run_id`, `model_id`, `prompt_template_id`, `normalizer_id`, `seed`, `latency_ms`, `tokens_in`, and `tokens_out`.
 - Normalization is versioned and swappable so scoring drift becomes an explicit contract change instead of a hidden code change.
 
 The plans also include the required harness metadata fields, issue-specific acceptance criteria, and test cases that would catch normalization/parsing drift before it contaminates leaderboard comparisons. Sources used were limited to the repo docs named in the task, especially `docs/architecture/ARCHITECTURE.md`, `docs/architecture/COMPETITION.md`, `docs/execution/ISSUE_REVIEW_HARNESS.md`, `docs/planning/plan_v0.2.md`, and the existing review-plan matrix.

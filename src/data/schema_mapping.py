@@ -34,6 +34,36 @@ preserved under ``metadata`` so ingest stays lossless.
 _REQUIRED: tuple[str, ...] = ("id", "prompt", "answer")
 
 
+def _require_text_field(value: Any, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(
+            f"reasoning_example_from_row: field {field_name!r} must be str, "
+            f"got {type(value).__name__}"
+        )
+    stripped = value.strip()
+    if stripped == "" or stripped.lower() in {"none", "nan", "null"}:
+        raise ValueError(
+            f"reasoning_example_from_row: field {field_name!r} contains "
+            "a missing/empty sentinel"
+        )
+    return value
+
+
+def _require_category(value: Any) -> str:
+    if not isinstance(value, str):
+        raise ValueError(
+            "reasoning_example_from_row: field 'category' must be str, "
+            f"got {type(value).__name__}"
+        )
+    stripped = value.strip()
+    if stripped == "" or stripped.lower() in {"none", "nan", "null"}:
+        raise ValueError(
+            "reasoning_example_from_row: field 'category' contains "
+            "a missing/empty sentinel"
+        )
+    return value
+
+
 def reasoning_example_from_row(
     row: Mapping[str, Any],
     *,
@@ -98,10 +128,15 @@ def reasoning_example_from_row(
         # Last-resort fallback to keep ingest lossless; callers that
         # care should pass a category column explicitly.
         category = "unknown"
+    else:
+        category = _require_category(category)
 
     # Merge pre-existing metadata (if row had one) with the leftover
     # columns; row-provided metadata wins on direct conflicts.
-    provided_metadata = canonical.get("metadata") or {}
+    if "metadata" in canonical:
+        provided_metadata = canonical["metadata"]
+    else:
+        provided_metadata = {}
     if not isinstance(provided_metadata, Mapping):
         raise ValueError(
             "reasoning_example_from_row: row['metadata'] must be a mapping"
@@ -111,10 +146,10 @@ def reasoning_example_from_row(
     merged_metadata.update(dict(provided_metadata))
 
     return ReasoningExample(
-        id=str(canonical["id"]),
-        category=str(category),
-        prompt=str(canonical["prompt"]),
-        answer=str(canonical["answer"]),
+        id=_require_text_field(canonical["id"], "id"),
+        category=category,
+        prompt=_require_text_field(canonical["prompt"], "prompt"),
+        answer=_require_text_field(canonical["answer"], "answer"),
         source=source,
         split=split,
         metadata=merged_metadata,

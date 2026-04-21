@@ -133,6 +133,11 @@ def _validate_inputs(
             raise ValueError(
                 f"reserve_splits: row {ex.id!r} is missing 'prompt'"
             )
+        if ex.split != "train":
+            raise ValueError(
+                "reserve_splits: expected all rows to have split=='train', "
+                f"got row {ex.id!r} with split={ex.split!r}"
+            )
 
 
 def _group_by_category(

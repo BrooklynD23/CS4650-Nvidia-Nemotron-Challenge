@@ -105,6 +105,19 @@ def test_sft_example_rejects_missing_message_keys() -> None:
         )
 
 
+def test_sft_example_rejects_non_string_message_values() -> None:
+    with pytest.raises(TypeError, match="messages\\[0\\]\\['role'\\]"):
+        SFTExample(
+            example_id="r1",
+            category="binary",
+            messages=[{"role": 1, "content": "hi"}],  # type: ignore[list-item]
+            completion="hello",
+            source="kaggle:train.csv",
+            split="train",
+            provenance={},
+        )
+
+
 def test_sft_example_is_immutable() -> None:
     ex = SFTExample(
         example_id="r1",

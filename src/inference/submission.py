@@ -30,6 +30,7 @@ import hashlib
 import json
 import subprocess
 import zipfile
+from collections import Counter
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -76,6 +77,7 @@ def validate_adapter_dir(adapter_dir: Path) -> None:
         raise FileNotFoundError(
             f"Adapter directory not found or not a directory: {adapter_dir}"
         )
+    resolved_adapter_dir = adapter_dir.resolve()
     for fname in REQUIRED_ADAPTER_FILES:
         fpath = adapter_dir / fname
         if not fpath.is_file():
@@ -83,6 +85,18 @@ def validate_adapter_dir(adapter_dir: Path) -> None:
                 f"Missing required adapter file: {fpath} "
                 f"(expected one of {list(REQUIRED_ADAPTER_FILES)} in {adapter_dir})"
             )
+        if fpath.is_symlink():
+            raise ValueError(
+                f"Required adapter file must not be a symlink: {fpath}"
+            )
+        resolved_file = fpath.resolve()
+        try:
+            resolved_file.relative_to(resolved_adapter_dir)
+        except ValueError as exc:
+            raise ValueError(
+                "Required adapter file resolves outside adapter directory: "
+                f"{fpath} -> {resolved_file}"
+            ) from exc
 
 
 def validate_submission_zip(zip_path: Path) -> None:
@@ -122,14 +136,22 @@ def validate_submission_zip(zip_path: Path) -> None:
                 "all entries must live at the archive root"
             )
 
+    counts = Counter(names)
+    duplicates = sorted(name for name, count in counts.items() if count > 1)
+    if duplicates:
+        raise ValueError(
+            "submission zip contains duplicate entries: "
+            f"{duplicates}"
+        )
+
     required = set(REQUIRED_ADAPTER_FILES)
     actual = set(names)
-    if actual != required:
+    if len(names) != len(REQUIRED_ADAPTER_FILES) or actual != required:
         missing = required - actual
         extra = actual - required
         raise ValueError(
             "submission zip does not match required layout: "
-            f"expected {sorted(required)}, got {sorted(actual)} "
+            f"expected {sorted(required)}, got {names} "
             f"(missing={sorted(missing)}, extra={sorted(extra)})"
         )
 

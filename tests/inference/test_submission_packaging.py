@@ -52,10 +52,12 @@ def _make_adapter_dir(
             json.dumps(
                 {
                     "peft_type": "LORA",
+                    "base_model_name_or_path": "nvidia/Nemotron-Nano-9B-v2",
                     "r": 32,
                     "lora_alpha": 64,
                     "target_modules": ["q_proj", "v_proj"],
                     "task_type": "CAUSAL_LM",
+                    "inference_mode": True,
                 }
             ),
             encoding="utf-8",
@@ -170,6 +172,17 @@ def test_validate_rejects_nested_paths(tmp_path: Path) -> None:
         validate_submission_zip(bad_zip)
 
 
+def test_validate_rejects_duplicate_zip_entries(tmp_path: Path) -> None:
+    bad_zip = tmp_path / "duplicate.zip"
+    with zipfile.ZipFile(bad_zip, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("adapter_config.json", "{}")
+        zf.writestr("adapter_model.safetensors", "first")
+        zf.writestr("adapter_model.safetensors", "second")
+
+    with pytest.raises(ValueError, match="duplicate entries"):
+        validate_submission_zip(bad_zip)
+
+
 # ---------- builder: missing adapter files -----------------------------------
 
 
@@ -187,6 +200,17 @@ def test_build_fails_when_safetensors_missing(tmp_path: Path) -> None:
 
     with pytest.raises(FileNotFoundError, match="adapter_model.safetensors"):
         build_submission(adapter_dir, output_dir, **_baseline_kwargs())
+
+
+def test_build_fails_when_required_file_is_symlink(tmp_path: Path) -> None:
+    adapter_dir = _make_adapter_dir(tmp_path / "src")
+    target = tmp_path / "outside.safetensors"
+    target.write_bytes(b"not-an-adapter")
+    (adapter_dir / "adapter_model.safetensors").unlink()
+    (adapter_dir / "adapter_model.safetensors").symlink_to(target)
+
+    with pytest.raises(ValueError, match="must not be a symlink"):
+        build_submission(adapter_dir, tmp_path / "out", **_baseline_kwargs())
 
 
 # ---------- PEFT smoke (skipped by default) ----------------------------------
@@ -231,10 +255,5 @@ def test_peft_load_smoke(tmp_path: Path) -> None:
     with zipfile.ZipFile(bundle.submission_zip, "r") as zf:
         zf.extractall(extract_dir)
 
-    # Synthetic config lacks base_model_name_or_path; for a real run this
-    # would round-trip, so we tolerate either a successful parse or a
-    # ValueError from PEFT's schema checks.
-    try:
-        PeftConfig.from_pretrained(str(extract_dir))
-    except ValueError:
-        pytest.xfail("synthetic adapter_config lacks fields required by PEFT schema")
+    config = PeftConfig.from_pretrained(str(extract_dir))
+    assert config.base_model_name_or_path

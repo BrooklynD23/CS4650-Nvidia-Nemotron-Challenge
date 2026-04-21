@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from src.contracts import EvalRecord
 from src.evaluation.golden_gate import (
     GoldenGateResult,
@@ -131,6 +133,12 @@ def test_nondeterministic_records_flagged_as_miss() -> None:
     # Normalized predictions are surfaced for debugging.
     assert "A" in result.misses[0]["normalized_prediction"]
     assert "B" in result.misses[0]["normalized_prediction"]
+
+
+def test_duplicate_golden_rows_raise() -> None:
+    golden = [_golden_row("g-1"), _golden_row("g-1")]
+    with pytest.raises(ValueError, match="duplicate golden example_id"):
+        evaluate_golden_gate([_record("g-1")], golden)
 
 
 def test_summarize_gate_pass() -> None:

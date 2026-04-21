@@ -91,9 +91,16 @@ def test_reserve_splits_different_seeds_differ() -> None:
         seed=9999,
         dataset_version="v0.1",
     )
-    # It is technically possible for two seeds to produce the same order,
-    # but extremely unlikely on this synthetic corpus.
-    assert [r.example_id for r in gold_a] != [r.example_id for r in gold_b]
+    assert [r.example_id for r in gold_a] == [
+        "binary-2",
+        "cipher-0",
+        "logic-2",
+    ]
+    assert [r.example_id for r in gold_b] == [
+        "binary-3",
+        "cipher-3",
+        "logic-3",
+    ]
 
 
 def test_reserve_splits_rejects_duplicate_example_id() -> None:
@@ -149,6 +156,21 @@ def test_reserve_splits_rejects_missing_prompt() -> None:
         reserve_splits(
             corpus,
             validation_size=2,
+            golden_size=1,
+            seed=1,
+            dataset_version="v0.1",
+        )
+
+
+def test_reserve_splits_rejects_non_train_rows() -> None:
+    corpus = [
+        _ex("train-1", category="binary", split="train"),
+        _ex("golden-1", category="cipher", split="golden"),
+    ]
+    with pytest.raises(ValueError, match="split=='train'"):
+        reserve_splits(
+            corpus,
+            validation_size=1,
             golden_size=1,
             seed=1,
             dataset_version="v0.1",

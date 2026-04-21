@@ -83,6 +83,24 @@ def test_reasoning_example_from_row_infers_category_when_missing() -> None:
     assert ex.category == "unknown"
 
 
+def test_reasoning_example_from_row_rejects_non_mapping_metadata() -> None:
+    with pytest.raises(ValueError, match="metadata"):
+        reasoning_example_from_row(
+            {"id": "1", "prompt": "p", "answer": "a", "metadata": 0},
+            source="kaggle:train.csv",
+            split="train",
+        )
+
+
+def test_reasoning_example_from_row_rejects_missing_sentinel_text() -> None:
+    with pytest.raises(ValueError, match="missing/empty sentinel"):
+        reasoning_example_from_row(
+            {"id": "1", "prompt": "p", "answer": "nan"},
+            source="kaggle:train.csv",
+            split="train",
+        )
+
+
 def test_sft_example_from_reasoning_mapping_preserves_ids_and_provenance() -> None:
     base = ReasoningExample(
         id="src-1",

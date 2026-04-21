@@ -110,12 +110,19 @@ def evaluate_golden_gate(
         records_by_id.setdefault(rec.example_id, []).append(rec)
 
     misses: list[dict[str, str]] = []
+    seen_golden_ids: set[str] = set()
     for row in golden:
         if not isinstance(row, SplitArtifactRow):
             raise TypeError(
                 "evaluate_golden_gate: expected SplitArtifactRow, got "
                 f"{type(row).__name__}"
             )
+        if row.example_id in seen_golden_ids:
+            raise ValueError(
+                "evaluate_golden_gate: duplicate golden example_id detected: "
+                f"{row.example_id!r}"
+            )
+        seen_golden_ids.add(row.example_id)
         matching = records_by_id.get(row.example_id)
         if not matching:
             misses.append(

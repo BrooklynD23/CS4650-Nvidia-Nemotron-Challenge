@@ -123,6 +123,8 @@ class SFTExample:
                 raise ValueError(
                     f"messages[{i}] must contain both 'role' and 'content' keys"
                 )
+            _require_str(msg["role"], f"messages[{i}]['role']")
+            _require_str(msg["content"], f"messages[{i}]['content']")
         _require_str(self.completion, "completion")
         _require_str(self.source, "source")
         _require_str(self.split, "split")

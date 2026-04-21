@@ -68,7 +68,7 @@
   "run_id": "string",
   "model_id": "string",
   "prompt_template_id": "string",
-  "normalization_version": "string",
+  "normalizer_id": "string",
   "example_id": "string",
   "category": "string",
   "gold": "string",
@@ -82,12 +82,12 @@
 }
 ```
 
-- [ ] Require every record to carry `run_id`, `model_id`, `prompt_template_id`, `normalization_version`, and `example_id`.
+- [ ] Require every record to carry `run_id`, `model_id`, `prompt_template_id`, `normalizer_id`, and `example_id`.
 - [ ] Require every run to emit a `run_config.json` snapshot that matches the fields stored in each record.
 - [ ] Require aggregate summaries to be derivable from record-level JSONL without notebook state.
 
 **Tests that must fail first**
-- A record missing `normalization_version` is rejected.
+- A record missing `normalizer_id` is rejected.
 - A run config that does not match the record-level attribution is rejected.
 - A summary that cannot be reconstructed from row-level artifacts is rejected.
 
@@ -124,19 +124,19 @@
 **Runner behavior**
 - Load frozen examples from the validation or benchmark split.
 - Generate predictions with a fixed seed and prompt template ID.
-- Normalize every raw prediction with the selected normalization version.
+- Normalize every raw prediction with the selected `normalizer_id`.
 - Score normalized predictions using exact match by default.
 - Write record-level outputs before aggregate summaries so partial failures are inspectable.
 
 **Scoring drift tests**
-- The same raw prediction scores differently under two normalization versions, and the runner records which version was used.
+- The same raw prediction scores differently under two normalizer IDs, and the runner records which one was used.
 - A prediction with extra reasoning text fails under the strict version and passes only under an explicitly permissive version.
 - A blank prediction is always incorrect.
 - A category-specific parser mismatch is surfaced in the row-level artifact, not hidden in the aggregate score.
 
 **Acceptance for this task**
 - The runner emits `eval_records.jsonl` plus a summary file for every run.
-- The summary includes overall accuracy, per-category accuracy, latency, token usage, and the active normalization version.
+- The summary includes overall accuracy, per-category accuracy, latency, token usage, and the active `normalizer_id`.
 
 ## Task 4: Add pipeline integration checks
 
@@ -146,7 +146,7 @@
 
 **Integration checks**
 - Ingest, predict, normalize, score, and report can run end-to-end on a tiny frozen fixture.
-- The report references `run_id`, `model_id`, `prompt_template_id`, `normalization_version`, and `seed`.
+- The report references `run_id`, `model_id`, `prompt_template_id`, `normalizer_id`, and `seed`.
 - The output is stable when rerun with the same seed and same normalization version.
 
 **Acceptance for this task**
@@ -186,4 +186,3 @@ This issue must satisfy the harness fields in `docs/execution/ISSUE_REVIEW_HARNE
 - The exact Kaggle normalization contract is still not fully verified, so version `exact_v1` should be treated as a placeholder name until the rules are frozen.
 - Some categories may need specialized parsing, but the default path should stay exact-match first.
 - If the base model or prompt template changes, those changes must be isolated from normalization changes in the record-level attribution.
-
