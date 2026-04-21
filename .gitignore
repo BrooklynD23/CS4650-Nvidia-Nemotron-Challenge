@@ -25,6 +25,8 @@ mlruns/
 # Data + model artifacts (keep out of git)
 data/**
 !data/.gitkeep
+!data/eval/
+!data/eval/.gitkeep
 
 adapters/**
 !adapters/.gitkeep
