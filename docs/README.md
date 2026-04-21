@@ -25,6 +25,8 @@ Use this file as the entry point for agents and contributors. Route to the subfo
   `docs/architecture/COMPETITION.md`
 - System architecture:
   `docs/architecture/ARCHITECTURE.md`
+- Plan/architecture drift review plan (resolution checklist):
+  `docs/analysis/PLAN_V0_2_REVIEW_PLAN.md`
 - Non-technical concepts explainer:
   `docs/architecture/CONCEPTS_EXPLAINED_NON_TECHNICAL.md`
 - Adversarial review:

@@ -20,6 +20,20 @@ Every child issue under `#13-#25` should include:
 - `Sources to verify`
 - `Risks / open questions`
 
+## Epic vs Child Issues (Duplication Policy)
+
+To avoid duplicated work between “Sprint (n)” issues and “Wave (A–D)” issues, we use a strict two-tier model:
+
+- **Epics / Sprint issues (`#1–#12`)** track goals and close only when their child issues are complete.
+- **Execution / Wave issues (`#13–#25`)** own deliverables (notebooks, harness artifacts) and contain the review checklist fields.
+
+Rules (enforced by reviewers):
+
+- Do not open a “Wave” issue that restates an existing epic’s goal; instead, link the epic to the correct child issue(s).
+- Do not execute work directly “in the epic”: execution evidence (artifacts, plan docs, commands) must live in the child issue.
+- Each execution issue must have a unique `Deliverable path`. If two issues point at the same path, one is a duplicate and should be closed or merged.
+- If new work is discovered, create a **new child issue** (next available number, e.g. `#26+`) and link it from the relevant epic; do not create a new “Sprint” issue.
+
 ## Review Lanes
 
 ### Agent owner

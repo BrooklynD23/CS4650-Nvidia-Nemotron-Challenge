@@ -4,8 +4,15 @@ This document is our **best-effort snapshot** of the competition constraints. If
 
 ## Key Dates
 
-- **Entry deadline:** 2026-06-08 (public Kaggle announcement copy on LinkedIn)
-- **Final deadline:** 2026-06-15 (reported publicly; confirm exact time on Kaggle)
+- **Entry deadline:** 2026-06-08 (public Kaggle announcement copy on LinkedIn; **UNVERIFIED** here)
+- **Final deadline:** 2026-06-15 23:59:00 (verified via Kaggle CLI on 2026-04-20)
+
+## Official Competition Data Files (via Kaggle API)
+
+Verified via Kaggle CLI on 2026-04-20:
+
+- `train.csv`
+- `test.csv`
 
 ## Compute Environment
 
