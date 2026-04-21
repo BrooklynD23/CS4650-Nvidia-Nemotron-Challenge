@@ -92,6 +92,7 @@ ACCOUNTABILITY_DOC_PATTERNS: tuple[str, ...] = (
     "docs/execution/*.md",
     "docs/execution/plans/*.md",
     "docs/analysis/*.md",
+    "docs/learn/*.md",
     ".github/ISSUE_TEMPLATE/*",
 )
 

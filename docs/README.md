@@ -1,6 +1,6 @@
 # Docs Router
 
-Last Updated: 2026-04-20
+Last Updated: 2026-04-21
 
 Use this file as the entry point for agents and contributors. Route to the subfolder that matches the task.
 
@@ -14,6 +14,8 @@ Use this file as the entry point for agents and contributors. Route to the subfo
   `docs/analysis/`
 - Sprint execution, issues, notebooks:
   `docs/execution/`
+- Beginner-friendly explainer hub with citations and status pages:
+  `docs/learn/`
 
 ## Canonical Docs
 
@@ -28,7 +30,7 @@ Use this file as the entry point for agents and contributors. Route to the subfo
 - Plan/architecture drift review plan (resolution checklist):
   `docs/analysis/PLAN_V0_2_REVIEW_PLAN.md`
 - Non-technical concepts explainer:
-  `docs/architecture/CONCEPTS_EXPLAINED_NON_TECHNICAL.md`
+  `docs/learn/README.md`
 - Adversarial review:
   `docs/analysis/ADVERSARIAL_REVIEW.md`
 - Sprint-to-issue map:
@@ -44,6 +46,7 @@ Use this file as the entry point for agents and contributors. Route to the subfo
 - `docs/architecture/README.md`
 - `docs/analysis/README.md`
 - `docs/execution/README.md`
+- `docs/learn/README.md`
 
 ## Drift Guard
 

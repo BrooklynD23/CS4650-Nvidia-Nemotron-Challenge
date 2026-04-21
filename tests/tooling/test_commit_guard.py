@@ -44,6 +44,16 @@ def test_pre_commit_accepts_issue_code_with_docs_update() -> None:
     assert errors == []
 
 
+def test_pre_commit_accepts_docs_learn_as_accountability_update() -> None:
+    errors = validate_pre_commit(
+        [
+            "src/evaluation/runner.py",
+            "docs/learn/project/implemented-today.md",
+        ]
+    )
+    assert errors == []
+
+
 def test_extract_issue_refs_finds_plain_and_closing_refs() -> None:
     message = "feat(#19): add eval runner\n\nRefs #19\nCloses #18"
     assert extract_issue_refs(message) == {18, 19}

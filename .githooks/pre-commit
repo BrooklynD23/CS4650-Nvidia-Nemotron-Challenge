@@ -8,4 +8,5 @@ if [[ ! -x "$PYTHON_BIN" ]]; then
   PYTHON_BIN="python3"
 fi
 
-exec "$PYTHON_BIN" "$ROOT/scripts/commit_guard.py" pre-commit
+"$PYTHON_BIN" "$ROOT/scripts/commit_guard.py" pre-commit
+exec "$PYTHON_BIN" "$ROOT/scripts/learn_docs_guard.py" "$ROOT/docs/learn"
