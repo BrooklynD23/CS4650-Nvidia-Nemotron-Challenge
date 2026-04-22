@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Fires doc-orchestrator after every commit to keep docs/learn/, NOTEBOOKS.md,
+# SPRINTS.md, AGENTS.md, and architecture docs aligned with repo state.
+# Runs in the background so it never blocks the terminal.
+
+ROOT="$(git rev-parse --show-toplevel)"
+
+# Skip if claude CLI is not available (e.g., CI runners without Claude Code)
+if ! command -v claude &> /dev/null; then
+  exit 0
+fi
+
+# Run orchestrator in background; log to .claude/doc-sync.log
+nohup claude -p --agent doc-orchestrator \
+  --allowedTools "Read,Bash,Glob,Grep,Edit,Write,Agent" \
+  "HEAD~1..HEAD" \
+  >> "$ROOT/.claude/doc-sync.log" 2>&1 &
+
+echo "[doc-sync] Documentation agent started in background (PID $!). Log: .claude/doc-sync.log"

@@ -9,6 +9,7 @@ repo_sources:
   - docs/execution/NOTEBOOKS.md
   - src/contracts.py
   - src/evaluation/runner.py
+  - src/evaluation/prompt_sweeps.py
   - src/inference/submission.py
 external_sources: []
 ---
@@ -30,9 +31,13 @@ work in four broad areas:
 - canonical data contracts and schema utilities
 - validation and golden-set evaluation gates
 - baseline evaluation and submission-packaging code
+- prompt and decode sweep helpers (deterministic run-id construction, sparse grid
+  expansion, Best-of-N majority vote, aggregate CSV writing, findings markdown
+  rendering)
 
 That means the repo is no longer just planning documents. It now contains real
-Python modules for contracts, evaluation, and packaging, along with tests.
+Python modules for contracts, evaluation, packaging, and prompt sweeping, along
+with tests for each.
 
 ## Current Repo Evidence
 
@@ -43,6 +48,11 @@ Python modules for contracts, evaluation, and packaging, along with tests.
 - `src/contracts.py` defines the shared project contracts.
 - `src/evaluation/runner.py` and related modules show that the eval pipeline now
   exists in code.
+- `src/evaluation/prompt_sweeps.py` contains the fully implemented sweep helpers
+  introduced in issue #21. The module is tested and importable; the notebook
+  that calls it is `active` in NOTEBOOKS.md but has not been executed end-to-end
+  because the required split artifacts (`data/eval/val.jsonl` and
+  `data/eval/golden.jsonl`) are not yet present in the repo.
 - `src/inference/submission.py` shows that the packaging path is implemented in
   code, not only discussed in planning docs.
 

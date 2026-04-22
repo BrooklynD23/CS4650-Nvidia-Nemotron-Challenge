@@ -23,14 +23,19 @@ present capability.
 
 The next major steps in the repo’s roadmap are:
 
-- prompt and decode experiments
-- failure-slice and trajectory collection
-- solver-framework design
-- synthetic-data design
-- SFT and masking runbooks for training
+- failure-slice and trajectory collection (notebook 06, scaffolded)
+- solver-framework design (notebook 07, scaffolded)
+- synthetic-data design (notebook 08, scaffolded)
+- SFT and masking runbooks for training (notebook 09, scaffolded)
 
-These are meaningful next steps, but they should still be described as planned
-work until the repo contains finished deliverables and validation for them.
+Note: prompt and decode experiments are no longer purely planned. The
+implementation in `src/evaluation/prompt_sweeps.py` and notebook 05 exist and
+are tested. Execution is blocked only on split artifact availability from issue
+#18. See the In Progress page for the current status.
+
+These remaining items are meaningful next steps, but they should be described as
+planned work until the repo contains finished deliverables and validation for
+them.
 
 ## Current Repo Evidence
 
