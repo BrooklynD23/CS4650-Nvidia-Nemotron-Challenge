@@ -1,4 +1,9 @@
 # Core ML stack (pin torch for reproducibility; CUDA build depends on environment)
+# PyPI default installs the CPU-only build. For CUDA 12.1 (RTX 3060/3080, Colab A100):
+#   pip install torch==2.4.0 --index-url https://download.pytorch.org/whl/cu121
+# For CUDA 11.8:
+#   pip install torch==2.4.0 --index-url https://download.pytorch.org/whl/cu118
+# Colab and HPC: torch is usually pre-installed with the correct CUDA build.
 torch==2.4.0
 
 # HF ecosystem
