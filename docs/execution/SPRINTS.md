@@ -87,4 +87,4 @@ The team should execute these as dependency waves, not calendar sprints. This ke
 
 - A notebook issue closes only when the notebook exists under `notebooks/`, follows the required documentation structure, and records source links in a `Sources` section.
 - A harness issue closes only when the associated Markdown or GitHub template artifact exists and links back to its parent epic.
-- If `#14` verifies that the competition uses plain exact match rather than boxed math formatting, all later child issues must adopt the exact-match contract before they can close.
+- `#14` is now verified (snapshot 2026-04-29, see `docs/architecture/COMPETITION.md`): the competition uses `\\boxed{}` extraction with exact match (or `1e-3` numeric tolerance), reasoning text is allowed, and the base model is KaggleHub `metric/nemotron-3-nano-30b-a3b-bf16/transformers/default`. All later child issues must adopt this `\\boxed{}` + exact-match (with numeric tolerance) contract before they can close.

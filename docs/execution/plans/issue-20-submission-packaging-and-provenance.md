@@ -13,7 +13,7 @@
 ## Evidence Basis
 
 - `docs/architecture/ARCHITECTURE.md` defines `PackageManifest` and makes provenance a first-class artifact.
-- `docs/architecture/COMPETITION.md` keeps submission constraints unresolved and warns that rank and layout must be treated as hard gates.
+- `docs/architecture/COMPETITION.md` "Verified" section (snapshot 2026-04-29) freezes the submission constraints: `r <= 32` (evaluator enforces `max_lora_rank=32`) and zip root containing only `adapter_config.json` + `adapter_model.safetensors`.
 - `data/external/konbu17/cells/cell04.py` zips exactly two files at the archive root: `adapter_config.json` and `adapter_model.safetensors`.
 - `data/external/konbu17/cells/cell15.py` enforces those two files as required adapter inputs.
 - `data/external/konbu17/cells/cell17.py` packages either a freshly trained adapter or a pretrained adapter path using the same two-file contract.

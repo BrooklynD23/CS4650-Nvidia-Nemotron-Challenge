@@ -12,12 +12,16 @@
 
 ## Non-Negotiable Freeze Gate
 
-- Do **not** finalize SFT or RL hyperparameters until `#14` freezes:
-  - base model ID and revision
-  - LoRA constraints, including rank cap and allowed target modules
-  - answer parsing / normalization contract
-  - submission artifact layout
-- If any of those inputs remain unresolved, the runbook must keep the queue configs in “preflight only” mode and refuse to submit training jobs.
+`#14` is now verified (snapshot 2026-04-29 in `docs/architecture/COMPETITION.md` "Verified" section). The runbook must consume these frozen inputs verbatim:
+
+- Base model: KaggleHub `metric/nemotron-3-nano-30b-a3b-bf16/transformers/default`
+- Load recipe: `trust_remote_code=True`, `torch.bfloat16`, `device_map="auto"`
+- LoRA constraints: `r <= 32` (evaluator enforces `max_lora_rank=32`); demo target modules `in_proj|out_proj|up_proj|down_proj`
+- Answer / normalization contract: `\\boxed{}` extraction, exact match or `1e-3` numeric tolerance, reasoning allowed
+- Submission artifact layout: `adapter_config.json` + `adapter_model.safetensors` at zip root
+- Evaluator decode params: `max_tokens=7680`, `temperature=0.0`, `top_p=1.0`, `max_model_len=8192`
+
+Preflight must reject any run whose `BASE_MODEL_ID`, `LORA_RANK`, `LORA_TARGET_MODULES`, or `NORMALIZER_ID` deviates from the verified values above.
 
 ## Scope
 
@@ -50,7 +54,7 @@ This plan does **not** define notebook cells or notebook execution flows.
 | `prep` | 5-15 minutes | config validation only; no model loads |
 | `tokenize` | 15-90 minutes | one pass over the selected train/val data, cached tokenizer, CPU parallelism available |
 | SFT smoke run | 0.5-2 GPU-hours | 100-500 steps, small subset, checkpointing enabled, no sweep fan-out |
-| SFT production run | 8-48 GPU-hours | `r<=32`, frozen target modules, gradient checkpointing on, validation every few hundred steps |
+| SFT production run | 8-48 GPU-hours | `r <= 32` (evaluator enforces `max_lora_rank=32`), frozen target modules `in_proj|out_proj|up_proj|down_proj`, gradient checkpointing on, validation every few hundred steps |
 | Optional RL run | 24-96 GPU-hours | only after SFT gate passes, reward contract frozen, smaller sweep count than SFT |
 | `eval` | 30 minutes-4 hours | golden set plus validation slice, plus per-checkpoint comparisons |
 | `package` | 5-20 minutes | adapter copy, hash, zip, manifest generation |
@@ -238,11 +242,11 @@ Expected: final adapter mirror exists for review without putting large files in 
 
 ## Verification Checklist
 
-- Preflight refuses to run if the base model or LoRA gate is unresolved.
+- Preflight refuses to run if `BASE_MODEL_ID`, `LORA_RANK`, `LORA_TARGET_MODULES`, or `NORMALIZER_ID` deviates from the verified `#14` freeze (snapshot 2026-04-29 in `docs/architecture/COMPETITION.md`).
 - SFT can resume from the latest checkpoint after interruption.
 - Golden and validation gates prevent promotion of a degraded checkpoint.
 - Optional RL stays disabled until the SFT gate is green.
-- Package output keeps provenance outside the Kaggle submission zip.
+- Package output keeps provenance outside the Kaggle submission zip and matches the verified zip layout (`adapter_config.json` + `adapter_model.safetensors` at root).
 
 ## Handoff
 

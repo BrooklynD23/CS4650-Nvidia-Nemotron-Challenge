@@ -44,9 +44,16 @@ Every local notebook must include the following sections inside the notebook:
 
 ## Cross-Notebook Architectural Decisions
 
-- Treat the benchmark as category-specific rule induction until `#14` proves otherwise.
-- Keep base model id, LoRA rank cap, and answer normalization configurable until officially verified.
-- Prefer strict exact-match evaluation contracts over math-specific formatting assumptions.
+- Treat the benchmark as category-specific rule induction; `#14` is now verified (snapshot 2026-04-29) and the contract below is binding.
+- Frozen contract from `#14` (see `docs/architecture/COMPETITION.md`):
+  - Base model: KaggleHub `metric/nemotron-3-nano-30b-a3b-bf16/transformers/default`
+  - Load recipe: `trust_remote_code=True`, `torch.bfloat16`, `device_map="auto"`
+  - LoRA rank cap: `r ≤ 32` (evaluator enforces `max_lora_rank=32`)
+  - Demo target modules: `in_proj|out_proj|up_proj|down_proj`
+  - Scoring: extract from `\\boxed{}`, exact match (or `1e-3` numeric tolerance); reasoning text outside the box is allowed and ignored
+  - Submission zip: `adapter_config.json` + `adapter_model.safetensors` at root
+  - Evaluator decode: `max_tokens=7680`, `temperature=0.0`, `top_p=1.0`, `max_model_len=8192`
+- Notebooks must use `\\boxed{}` extraction for normalization and not assume plain raw-string answers.
 - Keep explanation and citations inside the notebook so non-technical reviewers can read one artifact end-to-end.
 
 ## External Reference Work

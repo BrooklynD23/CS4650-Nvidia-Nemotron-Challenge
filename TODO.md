@@ -114,31 +114,58 @@ Do not begin the dependent task until the upstream owner confirms:
 
 Owner lane: PM / constraints
 
-- [ ] Confirm the evaluator base model ID and revision.
-- [ ] Confirm the base-model load recipe:
-  `trust_remote_code`, dtype, tokenizer, chat template, attention backend, and
-  thinking-control behavior.
-- [ ] Confirm scoring and answer-normalization rules.
-- [ ] Confirm whether output should be answer-only, boxed, or allowed to include
+Verified 2026-04-29 from competition overview + submission demo notebook:
+
+- [x] Confirm the evaluator base model ID and revision.
+  - KaggleHub path: `metric/nemotron-3-nano-30b-a3b-bf16/transformers/default`
+  - HF slug still unconfirmed; use KaggleHub path in Kaggle environments.
+- [x] Confirm the base-model load recipe (core confirmed from demo):
+  `trust_remote_code=True`, `dtype=torch.bfloat16`, `device_map="auto"`.
+  - Tokenizer special tokens, chat template, attention backend, and
+    thinking-control flags are **not confirmed** (evaluator-internal).
+- [x] Confirm scoring and answer-normalization rules.
+  - Answer in `\boxed{}`. Metric extracts boxed content, falls back to
+    heuristics. Correct = exact string match OR within relative tolerance 1e-3.
+- [x] Confirm whether output should be answer-only, boxed, or allowed to include
   reasoning.
-- [ ] Confirm LoRA-only submission rule, rank cap, target-module restrictions,
+  - Reasoning is allowed; only the extracted final answer is graded.
+- [~] Confirm LoRA-only submission rule, rank cap, target-module restrictions,
   dtype limits, and file-size limits.
-- [ ] Confirm exact `submission.zip` layout and accepted root filenames.
-- [ ] Confirm final deadline, entry deadline, daily submission limits, and final
+  - LoRA-only: confirmed. Rank cap `r ≤ 32`: confirmed (evaluator enforces).
+  - Demo target modules: `in_proj|out_proj|up_proj|down_proj` (4 modules).
+  - Dtype bf16: confirmed from demo. Competition-enforced dtype limits: unconfirmed.
+  - File-size limits: **unconfirmed**.
+- [x] Confirm exact `submission.zip` layout and accepted root filenames.
+  - Root must contain `adapter_config.json` + `adapter_model.safetensors`.
+- [x] Confirm final deadline, entry deadline, daily submission limits, and final
   submission selection behavior.
-- [ ] Update `docs/architecture/COMPETITION.md` with a clearly labeled
-  `Verified` section.
-- [ ] Propagate frozen facts to `docs/architecture/ARCHITECTURE.md`,
-  `docs/planning/plan_v0.2.md`, notebook plans, and this TODO.
+  - Final deadline: 2026-06-15 23:59 (treat as UTC).
+  - Entry deadline: 2026-05-10 (confirmed by team).
+  - Daily limit: 5 submissions per day (confirmed by team).
+  - Final-submission selection rule: out of scope — assume last submission counts.
+- [x] Update `docs/architecture/COMPETITION.md` with a clearly labeled
+  `Verified` section. — Done 2026-04-29.
+- [x] Propagate frozen facts to `docs/architecture/COMPETITION.md` and this
+  TODO. — Done 2026-04-29.
+  - `docs/architecture/ARCHITECTURE.md` and `docs/planning/plan_v0.2.md`
+    propagation deferred; no blocking dependency for Wave B start.
 
-Blocked by:
+Out of scope / unable to confirm (noted in COMPETITION.md, not blocking):
 
-- Manual Kaggle rules/demo capture if API access does not expose rules.
+- HF slug for base model — use KaggleHub path.
+- Evaluator tokenizer/chat-template/thinking flags — design as configurable.
+- Competition-enforced target-module restrictions — treat demo 4-module set as reference.
+- Dtype enforcement — treat bf16 as required.
+- File-size limit — monitor; flag if adapter > ~1 GB.
+- Final-submission selection rule — assume last submission counts.
+- Final deadline timezone — treat as UTC.
 
 General chat warning:
 
-- Before starting any training, scoring promotion, or packaging promotion, ask
-  the PM whether `#14` is frozen or still provisional.
+- Before any training, scoring promotion, or packaging promotion, confirm with
+  the PM that `#14` facts above are still current.
+- The 4-module target set from the demo is the reference; do not expand to
+  konbu17's 9-module set without PM sign-off.
 
 ### `#2` / `#16` - External Baseline Review
 

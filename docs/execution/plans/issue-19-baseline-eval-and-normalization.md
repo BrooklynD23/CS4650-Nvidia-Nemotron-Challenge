@@ -23,9 +23,9 @@
 
 ## Decision Summary
 
-- Treat exact-answer normalization as the default scoring contract.
+- Treat the verified Kaggle scoring contract (`\\boxed{}` extraction; exact match or `1e-3` numeric tolerance; reasoning text outside the box ignored) as the default normalizer.
 - Version the normalization rules so a scoring change is an explicit artifact change, not an invisible code drift.
-- Record the full eval run config alongside every scored prediction.
+- Record the full eval run config alongside every scored prediction (including evaluator decode params: `max_tokens=7680`, `temperature=0.0`, `top_p=1.0`, `max_model_len=8192`).
 - Keep baseline evaluation fully deterministic for a fixed model, prompt template, and seed.
 
 ## Pipeline Steps
@@ -98,9 +98,9 @@
 - Create: `tests/evaluation/test_normalization.py`
 
 **Normalization policy**
-- Default to exact string normalization compatible with Kaggle scoring assumptions.
-- Keep normalization version names explicit, such as `exact_v1`.
-- Allow category-specific parsers only when the category contract requires them.
+- Default to the verified Kaggle scoring contract (snapshot 2026-04-29): extract from `\\boxed{...}`, then compare with exact-match (or `1e-3` numeric tolerance for numeric answers); reasoning text outside the box is ignored.
+- Keep normalization version names explicit, such as `boxed_exact_v1`.
+- Allow category-specific parsers only when the category contract requires them (operating on the extracted boxed payload).
 - Preserve the raw prediction in every case so score disputes can be audited later.
 
 **Drift-catching test cases**
@@ -183,6 +183,6 @@ This issue must satisfy the harness fields in `docs/execution/ISSUE_REVIEW_HARNE
 
 ## Risks / Open Questions
 
-- The exact Kaggle normalization contract is still not fully verified, so version `exact_v1` should be treated as a placeholder name until the rules are frozen.
-- Some categories may need specialized parsing, but the default path should stay exact-match first.
+- The Kaggle scoring contract is now verified (snapshot 2026-04-29 in `docs/architecture/COMPETITION.md`): `\\boxed{}` extraction with exact match or `1e-3` numeric tolerance, reasoning text allowed but ignored outside the box. Normalizer versions (e.g. `boxed_exact_v1`) should encode that contract; older drafts that referenced `exact_v1` as a placeholder for an unverified rule set are stale.
+- Some categories may need specialized parsing on top of `\\boxed{}` extraction (for example numeric vs string answers), but the default path stays boxed-extract + exact-match-with-tolerance.
 - If the base model or prompt template changes, those changes must be isolated from normalization changes in the record-level attribution.

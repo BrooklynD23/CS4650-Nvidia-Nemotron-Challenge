@@ -26,9 +26,9 @@ Primary output is a delta matrix plus gated recommendations, so Waves B–D do n
 |---|---|---|---|
 | Which external baselines are in-scope | frozen | Keeps scope bounded | This plan |
 | Baseline extraction checklist (what to capture) | frozen | Prevents missing the high-leverage deltas | This plan |
-| Whether to adopt `\\boxed{}` or exact-match output style | gated | Must match Kaggle scoring | `#14` scoring gate |
-| Base model ID for reproduction | gated | Drives tokenizer/template/module names | `#14` base model gate |
-| LoRA defaults (rank/targets) adopted as provisional | frozen provisional | Prevents illegal rank | `#14` adapter constraints gate |
+| Whether to adopt `\\boxed{}` or exact-match output style | resolved | Must match Kaggle scoring | `#14` scoring gate — VERIFIED 2026-04-29: `\\boxed{}` extraction with exact match or `1e-3` tolerance |
+| Base model ID for reproduction | resolved | Drives tokenizer/template/module names | `#14` base model gate — VERIFIED 2026-04-29: KaggleHub `metric/nemotron-3-nano-30b-a3b-bf16/transformers/default` |
+| LoRA defaults (rank/targets) adopted | resolved | Prevents illegal rank | `#14` adapter gate — VERIFIED 2026-04-29: `r <= 32` (evaluator enforces `max_lora_rank=32`); demo target modules `in_proj|out_proj|up_proj|down_proj` |
 
 ## 4) Files to create / modify
 
@@ -88,19 +88,22 @@ If Tong’s repo is not vendored locally, capture facts manually:
 ### Task 4 — Build a delta matrix vs our repo contracts
 
 - [ ] Compare baselines against:
-  - `docs/planning/plan_v0.2.md` assumptions (notably 4B vs 30B; r=64 vs r<=32; boxed formatting)
-  - `docs/architecture/ARCHITECTURE.md` contracts (exact match, masking, eval record shape, packaging manifest)
+  - `docs/architecture/COMPETITION.md` "Verified" section (snapshot 2026-04-29) — the canonical source for base model (30B-A3B), `r <= 32`, and `\\boxed{}` scoring
+  - `docs/planning/plan_v0.2.md` assumptions (note: any residual `4B` or `r=64` claims there are stale and contradict the freeze)
+  - `docs/architecture/ARCHITECTURE.md` contracts (`\\boxed{}` extraction + exact match with `1e-3` tolerance, masking, eval record shape, packaging manifest)
   - `docs/analysis/PLAN_V0_2_REVIEW_PLAN.md` drift matrix and gates
 - [ ] Produce a delta table with “Adopt / Reject / Gate” per item.
 - [ ] For each “Adopt”, name the exact downstream issue(s) that should consume the change (e.g., `#19` normalization, `#20` packaging).
 
 ### Task 5 — Emit explicit recommendations with stop conditions
 
-- [ ] Recommendations must be either:
-  - “safe provisional default” (repo-evidence backed), or
-  - “BLOCKED until `#14` is resolved”
-- [ ] Do not recommend final training hyperparameters until base model + scoring + adapter constraints are frozen.
-- [ ] Do not recommend `\\boxed{}` or `<think>` defaults until scoring is verified.
+- [ ] Recommendations must align with the verified `#14` freeze (snapshot 2026-04-29 in `docs/architecture/COMPETITION.md`):
+  - Base model: KaggleHub `metric/nemotron-3-nano-30b-a3b-bf16/transformers/default`
+  - LoRA cap: `r <= 32`; demo target modules `in_proj|out_proj|up_proj|down_proj`
+  - Output: `\\boxed{}` extraction; exact match or `1e-3` numeric tolerance
+  - Submission: `adapter_config.json` + `adapter_model.safetensors` at zip root
+- [ ] `\\boxed{}` is the verified output contract; recommend it as the default rather than as a gated option.
+- [ ] `<think>` / reasoning text is allowed but ignored outside the boxed payload, so format-rewards must not penalize it.
 
 ## 7) Verification commands (and expected outputs)
 
@@ -116,15 +119,15 @@ If Tong’s repo is not vendored locally, capture facts manually:
 
 - [ ] Baseline review checklist is explicit and complete.
 - [ ] konbu17 extraction uses repo-local evidence with file references.
-- [ ] Tong baseline extraction is either evidence-backed or explicitly BLOCKED with manual capture steps.
-- [ ] Delta matrix clearly compares baseline vs repo contracts and marks each item as Adopt/Reject/Gate.
-- [ ] Recommendations include explicit stop-conditions tied to `#14` freeze gates.
+- [ ] Tong baseline extraction is either evidence-backed or explicitly flagged with manual capture steps.
+- [ ] Delta matrix clearly compares baseline vs repo contracts and marks each item as Adopt/Reject/Note.
+- [ ] Recommendations cite the verified `#14` freeze (snapshot 2026-04-29 in `docs/architecture/COMPETITION.md`).
 - [ ] No notebooks were created or modified.
 
 ## 9) Risks / open questions
 
 - Tong baseline may require web access or manual copying if not vendored.
-- Konbu17 uses boxed formatting and “thinking” template features; if Kaggle scoring is strict exact-match, adopting this could be harmful.
+- Konbu17 already uses `\\boxed{}` formatting plus a thinking template; per the 2026-04-29 freeze this matches Kaggle scoring (`\\boxed{}` extraction, reasoning ignored outside the box), so the konbu17 output style is a safe baseline to inherit.
 - TRL default masking behavior may differ by version; if masking is critical, this must be explicitly set in our future training scripts.
 
 ## 10) Sources

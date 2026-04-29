@@ -3,7 +3,7 @@ title: Nemotron Architecture in Plain Language
 audience: beginner
 page_type: concept
 status: conceptual
-last_reviewed: 2026-04-21
+last_reviewed: 2026-04-29
 repo_sources:
   - docs/architecture/ARCHITECTURE.md
   - docs/architecture/COMPETITION.md
@@ -44,14 +44,20 @@ tradeoff, not just a marketing detail.
 
 ## Why This Matters To This Repo
 
-The repo’s technical architecture in `docs/architecture/ARCHITECTURE.md` keeps
-the exact base model configurable and treats output normalization, provenance,
-and evaluation as first-class concerns. That caution makes sense because model
-architecture affects:
+The verified competition facts (`docs/architecture/COMPETITION.md`, snapshot
+2026-04-29) fix the base model to the Nemotron-3 Nano 30B-A3B BF16 checkpoint
+hosted on KaggleHub at `metric/nemotron-3-nano-30b-a3b-bf16/transformers/default`,
+loaded with `trust_remote_code=True`, `torch.bfloat16`, and `device_map="auto"`.
+The repo’s technical architecture in `docs/architecture/ARCHITECTURE.md` builds
+on that fixed base and treats output normalization, provenance, and evaluation
+as first-class concerns. The architecture choice still matters because it
+affects:
 
-- which fine-tuning tricks are feasible
-- which runtime assumptions are safe
-- how much context can be practical during inference
+- which fine-tuning tricks are feasible (LoRA only, with `r ≤ 32`)
+- which runtime assumptions are safe (Mamba-style hybrid layers, target modules
+  `in_proj|out_proj|up_proj|down_proj`)
+- how much context can be practical during inference (the evaluator caps at
+  `max_model_len=8192` with `max_tokens=7680`)
 
 ## Sources
 

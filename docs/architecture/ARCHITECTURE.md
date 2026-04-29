@@ -10,10 +10,10 @@ This is the intended architecture for an MVP that can:
 
 ## Architectural Direction
 
-The foundation phase should assume the competition is closer to **category-specific rule induction** than generic chain-of-thought math. That affects four design choices:
+The foundation phase should assume the competition is closer to **category-specific rule induction** than generic chain-of-thought math. The Kaggle constraints freeze (`docs/architecture/COMPETITION.md`, snapshot 2026-04-29) confirms reasoning text is allowed but the final answer must be emitted inside `\\boxed{}`, scored as exact match (with `1e-3` tolerance for numeric answers). That affects four design choices:
 
-- keep output normalization centered on exact-match contracts rather than `\\boxed{}` formatting
-- keep the base model id and tokenizer behavior configurable until the Kaggle rules are verified
+- center output normalization on `\\boxed{}` extraction plus exact-match (or `1e-3` numeric tolerance) comparison; reasoning text outside the box is ignored by the evaluator
+- treat the base model as a fixed contract: KaggleHub `metric/nemotron-3-nano-30b-a3b-bf16/transformers/default`, loaded with `trust_remote_code=True`, `torch.bfloat16`, and `device_map="auto"`
 - treat solver and teacher interfaces as category-aware plugins rather than one monolithic reasoning prompt
 - make provenance a first-class artifact so reviewers can trace every notebook, evaluation, and submission assumption
 
@@ -105,8 +105,9 @@ def verify(pred: str, gold: str) -> bool:
   - max thinking tokens / budget
   - decoding params (temperature, top_p)
 - Output normalization:
-  - exact-match string normalization rules for evaluation
-  - category-specific parsers if needed (e.g., binary strings)
+  - extract the final answer from `\\boxed{...}`; reasoning text outside the box is discarded
+  - score by exact string match, with `1e-3` tolerance for numeric answers (per the verified Kaggle scoring contract)
+  - category-specific parsers if needed (e.g., binary strings) operate on the extracted boxed payload
   - all eval outputs should be serializable as `EvalRecord`
 
 ### 3) Teacher / Solver Layer (Competitive Edge)
@@ -139,18 +140,19 @@ Outputs:
   - always mask prompt/user tokens
   - optionally mask parts of reasoning (if it harms generalization)
 - Adapter config:
-  - base model configurable
-  - target_modules discovered programmatically (no hard-coded names)
+  - base model is the verified KaggleHub path `metric/nemotron-3-nano-30b-a3b-bf16/transformers/default` (see `docs/architecture/COMPETITION.md`)
+  - LoRA rank capped at `r ≤ 32` (evaluator enforces `max_lora_rank=32`)
+  - demo target modules: `in_proj|out_proj|up_proj|down_proj` (4 modules); broader sets allowed only if `r ≤ 32` is preserved
 
 ### 5) Evaluation Layer
 
 **Goal:** make improvements measurable and avoid self-deception.
 
 - Metrics:
-  - overall exact-match accuracy
+  - overall exact-match accuracy after `\\boxed{}` extraction (with `1e-3` numeric tolerance)
   - per-category accuracy
-  - “format validity” rate (if applicable)
-  - latency / token usage (thinking budget sensitivity)
+  - “format validity” rate (fraction of outputs that emit a parsable `\\boxed{}` payload)
+  - latency / token usage; the evaluator caps generation at `max_tokens=7680` with `max_model_len=8192`, `temperature=0.0`, `top_p=1.0`
 - Required checks:
   - golden set regression gate
   - seed-controlled determinism for evaluation runs
@@ -160,11 +162,11 @@ Outputs:
 **Goal:** always produce a valid submission artifact.
 
 - “export adapter” step that writes:
-  - adapter weights (`.safetensors`)
-  - adapter config
-  - a metadata card shaped like `PackageManifest`
+  - `adapter_model.safetensors` and `adapter_config.json` at the zip root (verified Kaggle layout)
+  - a `PackageManifest` metadata card kept **outside** the submission zip (out-of-band provenance)
 - A “submission dry run” that validates:
-  - expected files exist
+  - the zip contains exactly `adapter_config.json` and `adapter_model.safetensors` at root, no nested folders or extra files
+  - LoRA rank in `adapter_config.json` satisfies `r ≤ 32`
   - sizes are within competition constraints
 
 ## Notebook-First Foundation

@@ -3,7 +3,7 @@ title: The Kaggle Challenge Explained
 audience: beginner
 page_type: concept
 status: conceptual
-last_reviewed: 2026-04-21
+last_reviewed: 2026-04-29
 repo_sources:
   - docs/architecture/COMPETITION.md
   - docs/execution/SPRINTS.md
@@ -42,9 +42,13 @@ packaging and provenance phase instead of treating evaluation as the final step.
 
 ## Why The Repo Treats Some Competition Facts Carefully
 
-The repo’s competition notes explicitly mark some facts as verified and others
-as still needing confirmation. That is a healthy sign, not a weakness: it means
-the project is trying to separate official rules from community assumptions.
+The repo’s competition notes (`docs/architecture/COMPETITION.md`) now have a
+"Verified" section frozen on 2026-04-29 covering the base model, scoring rules,
+LoRA rank cap, submission zip layout, and deadlines. Earlier in the project
+those same items were marked as needing confirmation; the team kept that
+caution on purpose so official rules and community assumptions never silently
+mixed. With the freeze in place, downstream notebooks and plans should treat
+those verified items as binding rather than provisional.
 
 ## Sources
 
