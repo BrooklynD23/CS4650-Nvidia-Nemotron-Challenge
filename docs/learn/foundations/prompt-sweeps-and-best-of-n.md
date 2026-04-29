@@ -9,7 +9,8 @@ repo_sources:
   - notebooks/05_prompting_and_decode_sweeps.ipynb
   - docs/analysis/prompting_findings.md
   - docs/execution/NOTEBOOKS.md
-external_sources: []
+external_sources:
+  - https://huggingface.co/docs/transformers/generation_strategies
 ---
 
 # Prompt Sweeps, Decode Parameters, and Best-of-N
@@ -108,3 +109,4 @@ currently contains the blocked-state description, not final findings.
 - Repo: [notebooks/05_prompting_and_decode_sweeps.ipynb](../../../notebooks/05_prompting_and_decode_sweeps.ipynb)
 - Repo: [docs/analysis/prompting_findings.md](../../analysis/prompting_findings.md)
 - Repo: [docs/execution/NOTEBOOKS.md](../../execution/NOTEBOOKS.md)
+- External: https://huggingface.co/docs/transformers/generation_strategies

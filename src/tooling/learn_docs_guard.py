@@ -206,9 +206,14 @@ def _validate_body(path: Path, metadata: dict[str, Any], body: str) -> list[str]
             errors.append(f"{path}: missing required heading {heading!r}")
 
     page_type = metadata.get("page_type")
-    if page_type in {"concept", "glossary"} and "external_sources" not in metadata:
+    external_sources = metadata.get("external_sources")
+    if (
+        page_type in {"concept", "glossary"}
+        and isinstance(external_sources, list)
+        and not external_sources
+    ):
         errors.append(
-            f"{path}: concept/glossary pages must declare external_sources"
+            f"{path}: concept/glossary pages must declare non-empty external_sources"
         )
 
     if page_type in {"project-status", "roadmap"}:

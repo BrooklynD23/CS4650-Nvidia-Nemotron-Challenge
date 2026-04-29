@@ -30,6 +30,7 @@ sources without recording them here.
 | https://huggingface.co/papers/1706.03762 | Paper index | Accessible reference for the Transformer architecture |
 | https://huggingface.co/papers/2106.09685 | Paper index | Accessible reference for LoRA adapters |
 | https://huggingface.co/papers/2312.00752 | Paper index | Accessible reference for Mamba state-space modeling |
+| https://huggingface.co/docs/transformers/generation_strategies | Official Hugging Face docs | Reference for decoding and text-generation strategy concepts |
 | https://docs.tavily.com/documentation/mcp | Official Tavily docs | Research-tool setup and MCP guidance |
 
 ## Sources
