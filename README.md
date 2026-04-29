@@ -1,6 +1,6 @@
 # CS4650 NVIDIA Nemotron Model Reasoning Challenge
 
-Capstone project repo for Kaggle's **NVIDIA Nemotron Model Reasoning Challenge**. This repository currently contains **planning and architecture docs only**; implementation (code, notebooks, pipelines) is pending.
+Capstone project repo for Kaggle's **NVIDIA Nemotron Model Reasoning Challenge**. This repository currently contains **planning and architecture docs only**; implementation (code, notebooks, pipelines) will follow in later phases.
 
 ## Quick Links (Canonical Docs)
 - **Execution plan (source of truth):** `docs/planning/plan_v0.2.md`
@@ -21,15 +21,11 @@ Capstone project repo for Kaggle's **NVIDIA Nemotron Model Reasoning Challenge**
 flowchart LR
   Kaggle[Kaggle Competition]
   Data[(Datasets)]
-  BaseModel[Base Model
-NVIDIA Nemotron-3-Nano-4B]
-  Repo[This Repo
-(Planning + Code)]
-  Training[Training Pipeline
-SFT/GRPO]
+  BaseModel["Base Model<br/>NVIDIA Nemotron-3-Nano-4B"]
+  Repo["This Repo<br/>(Planning + Code)"]
+  Training["Training Pipeline<br/>SFT/GRPO"]
   Eval[Evaluation + Benchmarks]
-  Adapter[LoRA Adapter
-.safetensors]
+  Adapter["LoRA Adapter<br/>.safetensors"]
   Submission[Submission Notebook]
 
   Kaggle --> Data
