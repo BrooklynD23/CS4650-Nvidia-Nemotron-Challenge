@@ -51,8 +51,8 @@ with tests for each.
 - `src/evaluation/prompt_sweeps.py` contains the fully implemented sweep helpers
   introduced in issue #21. The module is tested and importable; the notebook
   that calls it is `active` in NOTEBOOKS.md but has not been executed end-to-end
-  because the required split artifacts (`data/eval/val.jsonl` and
-  `data/eval/golden.jsonl`) are not yet present in the repo.
+  because the required split artifacts (`data/eval/validation_200.jsonl` and
+  `data/eval/golden_20.jsonl`) are not yet present in the repo.
 - `src/inference/submission.py` shows that the packaging path is implemented in
   code, not only discussed in planning docs.
 

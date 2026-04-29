@@ -30,8 +30,8 @@ from src.evaluation.config import EvalRunConfig, read_run_config
 from src.evaluation.reporting import read_eval_records_jsonl, read_summary_json
 from src.evaluation.splits import SplitArtifactRow, read_split_jsonl
 
-VAL_SPLIT_FILENAME = "val.jsonl"
-GOLDEN_SPLIT_FILENAME = "golden.jsonl"
+VAL_SPLIT_FILENAME = "validation_200.jsonl"
+GOLDEN_SPLIT_FILENAME = "golden_20.jsonl"
 
 DEFAULT_STRATEGIES: tuple[str, ...] = (
     "zero-shot-cot",
@@ -128,8 +128,8 @@ def require_split_artifacts(repo_root: str | Path) -> tuple[Path, Path]:
         rel = ", ".join(str(path.relative_to(root)) for path in missing)
         raise FileNotFoundError(
             "Prompt/decode sweeps require frozen split artifacts from issue #18. "
-            f"Missing: {rel}. Create data/eval/val.jsonl and "
-            "data/eval/golden.jsonl before running notebook 05. "
+            f"Missing: {rel}. Create data/eval/validation_200.jsonl and "
+            "data/eval/golden_20.jsonl before running notebook 05. "
             "Synthetic fallback is intentionally disabled for this phase."
         )
     return val_path, golden_path
@@ -224,7 +224,7 @@ def validate_baseline_compatibility(
         raise ValueError(
             "Baseline total does not match current val split size: "
             f"baseline={total!r}, val_rows={len(val_rows)}. Use a baseline "
-            "run produced from the same val.jsonl artifact."
+            "run produced from the same validation_200.jsonl artifact."
         )
     baseline_ids = tuple(record.example_id for record in baseline.records)
     val_ids = tuple(row.example_id for row in val_rows)
@@ -232,7 +232,7 @@ def validate_baseline_compatibility(
         raise ValueError(
             "Baseline eval_records example_id order does not match the current "
             "val split artifact. Point BASELINE_RUN_ID to a run produced from "
-            "this exact val.jsonl selection."
+            "this exact validation_200.jsonl selection."
         )
 
 

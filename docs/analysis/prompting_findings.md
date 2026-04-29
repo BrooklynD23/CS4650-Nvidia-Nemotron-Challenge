@@ -5,7 +5,7 @@ Status: implementation complete, execution blocked pending real sweep inputs.
 ## Current State
 
 Notebook `notebooks/05_prompting_and_decode_sweeps.ipynb` now contains the runnable sweep workflow for issue `#21`:
-- strict split loading from `data/eval/val.jsonl` and `data/eval/golden.jsonl`
+- strict split loading from `data/eval/validation_200.jsonl` and `data/eval/golden_20.jsonl`
 - sparse sweep over zero-shot CoT and few-shot CoT across the required decode grid
 - Best-of-N majority-vote follow-up for `N=8` and `N=32`
 - artifact writing through `run_baseline_eval()` into `data/eval/runs/<run_id>/`
@@ -15,8 +15,8 @@ Notebook `notebooks/05_prompting_and_decode_sweeps.ipynb` now contains the runna
 ## Blockers
 
 The current checkout does not include the required split artifacts:
-- `data/eval/val.jsonl`
-- `data/eval/golden.jsonl`
+- `data/eval/validation_200.jsonl`
+- `data/eval/golden_20.jsonl`
 
 The only baseline artifacts currently present are the stub runs from notebook `04` under `data/eval/runs/baseline-stub-v1*`. Those are not sufficient to execute the sweep because they do not contain the frozen prompt-bearing split rows required by the runner.
 

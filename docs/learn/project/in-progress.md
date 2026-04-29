@@ -44,8 +44,8 @@ The biggest unfinished work falls into three groups:
   as `active`, meaning the code is real and importable, but the notebook has
   not been executed end-to-end yet. Several later notebooks remain `scaffolded`.
 - `docs/analysis/prompting_findings.md` records the current blocked state
-  explicitly: the notebook requires `data/eval/val.jsonl` and
-  `data/eval/golden.jsonl` from issue #18, which are not yet committed to the
+  explicitly: the notebook requires `data/eval/validation_200.jsonl` and
+  `data/eval/golden_20.jsonl` from issue #18, which are not yet committed to the
   repo. Execution will produce ranked sweep results once those files exist.
 - `docs/execution/plans/issue-25-hpc-queue-runbook.md` exists as a planning
   artifact, but the corresponding training work is still gated on earlier

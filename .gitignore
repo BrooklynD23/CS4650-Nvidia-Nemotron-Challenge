@@ -27,6 +27,7 @@ data/**
 !data/.gitkeep
 !data/eval/
 !data/eval/.gitkeep
+!data/eval/README.md
 
 adapters/**
 !adapters/.gitkeep

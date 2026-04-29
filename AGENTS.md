@@ -12,10 +12,21 @@ This repo is a CS4650 capstone for the **NVIDIA Nemotron Model Reasoning Challen
 6. **Notebook registry (local + external references):** `docs/execution/NOTEBOOKS.md`
 7. **Sprint plan + issue mapping:** `docs/execution/SPRINTS.md`
 8. **Adversarial review (plan + MVP gaps):** `docs/analysis/ADVERSARIAL_REVIEW.md`
+9. **Current repo state:** `docs/learn/project/implemented-today.md`
 
 ## Repo Reality Check (as of today)
 
-Right now the repository contains **planning docs only** (`docs/*`). The code, notebooks, and pipelines described in `docs/planning/plan_v0.2.md` are not yet implemented.
+Wave A/B foundation is present. The repository now contains:
+
+- `src/` — contracts, evaluation harness, golden-gate, normalization, prompt
+  sweeps, submission packaging (~2 500 LOC across 11 modules)
+- `tests/` — 19 test files, ~1 957 LOC
+- `notebooks/` — 11 Jupyter notebooks (00–10), registered in
+  `docs/execution/NOTEBOOKS.md`
+
+See `docs/learn/project/implemented-today.md` for the current state summary.
+Wave C/D work (trajectory analysis, solvers, synthetic data, SFT training) is
+planned but not yet implemented.
 
 ## Working Conventions (so work stays parallelizable)
 

@@ -52,37 +52,31 @@ Do not begin the dependent task until the upstream owner confirms:
 
 ## Immediate P0 Fixes
 
-- [ ] Fix the current failing test:
+- [x] Fix the current failing test:
   `tests/tooling/test_learn_docs_guard.py::test_rejects_concept_page_without_external_sources`.
   - Issue link: process/docs guard, related to `#12`, `#13`, `#15`
-  - Current failure: concept/glossary pages with `external_sources: []` are
-    accepted because the guard checks only for the field, not a non-empty list.
-  - Acceptance: targeted learn-docs test passes.
-- [ ] Run the full test suite after the guard fix.
+  - Fix shipped in commit `d3267c9`; test confirmed passing.
+- [x] Run the full test suite after the guard fix.
   - Command:
     `PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q -p no:cacheprovider`
-  - Last observed result before this TODO:
-    `188 passed, 1 skipped, 1 failed`
-- [ ] Resolve root status drift.
+  - Result: `189 passed, 1 skipped, 0 failed`
+- [x] Resolve root status drift.
   - Issue links: `#12`, `#13`, `#15`
-  - Files to inspect: `AGENTS.md`, `docs/execution/NOTEBOOKS.md`,
-    `docs/learn/project/implemented-today.md`,
-    `docs/learn/project/in-progress.md`
-  - Problem: `AGENTS.md` still says the repo contains planning docs only, while
-    the tree has `src/`, tests, notebooks, packaging, and evaluation utilities.
-- [ ] Resolve split artifact naming drift before generating real eval files.
+  - Fix: `AGENTS.md` "Repo Reality Check" section updated to describe Wave A/B
+    foundation (`src/`, `tests/`, `notebooks/`); item 9 added to canonical docs
+    list pointing to `docs/learn/project/implemented-today.md`.
+- [x] Resolve split artifact naming drift before generating real eval files.
   - Issue links: `#18`, `#19`, `#21`
-  - Conflicting names:
-    - `data/eval/validation_200.jsonl`
-    - `data/eval/golden_20.jsonl`
-    - `data/eval/val.jsonl`
-    - `data/eval/golden.jsonl`
-  - Acceptance: one canonical naming policy is documented and all loaders agree.
-- [ ] Decide eval artifact tracking policy.
+  - Decision: canonical names are `validation_200.jsonl` (validation split) and
+    `golden_20.jsonl` (golden set). `VAL_SPLIT_FILENAME` and
+    `GOLDEN_SPLIT_FILENAME` in `src/evaluation/prompt_sweeps.py` updated; all
+    doc references in `docs/analysis/`, `docs/learn/foundations/`, and
+    `docs/learn/project/` updated to match.
+- [x] Decide eval artifact tracking policy.
   - Issue links: `#3`, `#4`, `#18`, `#19`
-  - Problem: broad data ignore rules can hide small reproducibility-critical
-    split artifacts.
-  - Acceptance: PM decision recorded before real splits are produced.
+  - Decision: artifacts are gitignored (not committed); reproducible via
+    Notebook 03. Policy documented in `data/eval/README.md`; `.gitignore`
+    updated to allow that README to be committed.
 
 ## Issue Map
 

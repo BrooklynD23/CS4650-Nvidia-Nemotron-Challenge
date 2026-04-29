@@ -97,7 +97,7 @@ Each run in the sweep uses the same evaluation harness as the baseline (notebook
 The sweep implementation exists in code and is fully tested. The notebook
 (`notebooks/05_prompting_and_decode_sweeps.ipynb`) is marked `active` in the
 registry. However, execution is blocked: the required input files
-(`data/eval/val.jsonl` and `data/eval/golden.jsonl`) are not yet committed to
+(`data/eval/validation_200.jsonl` and `data/eval/golden_20.jsonl`) are not yet committed to
 the repo. Those files will be produced by issue #18.
 
 No sweep results exist yet. The `docs/analysis/prompting_findings.md` file
