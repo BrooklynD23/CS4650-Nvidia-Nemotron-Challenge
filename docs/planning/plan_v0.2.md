@@ -97,7 +97,7 @@ CS4650-Nvidia-Nemotron-Challenge/
 ├── .gitignore                    # Exclude data/, adapters/*.safetensors, .env
 │
 ├── configs/                      # Training configurations
-│   ├── lora_baseline.yaml        # LoRA r=64, alpha=128
+│   ├── lora_baseline.yaml        # LoRA r=32, alpha=32 (#14 rank cap)
 │   ├── lora_qlora.yaml           # QLoRA 4-bit for consumer GPUs
 │   ├── grpo_config.yaml          # GRPO RL training
 │   └── data_curation.yaml        # NeMo Curator config
@@ -415,13 +415,13 @@ python main.py \
 **Requires**: Phase 3 curated dataset ready, validation set reserved
 **Hardware**: **HPC cluster** (primary) or Colab Pro with QLoRA (fallback)
 
-### 4.1 LoRA Configuration (NVIDIA Recommended)
+### 4.1 LoRA Configuration (Verified #14 Contract)
 ```python
 from peft import LoraConfig
 
 lora_config = LoraConfig(
-    r=64,                          # Rank (sweet spot per NVIDIA)
-    lora_alpha=128,                # Alpha = 2x rank
+    r=32,                          # Max rank allowed by verified #14 contract
+    lora_alpha=32,                 # Match konbu17-safe baseline; tune only after PM signoff
     target_modules=[
         "q_proj", "v_proj",        # Transformer attention layers
         "x_proj", "in_proj", "out_proj"  # Mamba-2 layers

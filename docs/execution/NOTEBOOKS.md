@@ -65,6 +65,8 @@ Every local notebook must include the following sections inside the notebook:
 | https://www.kaggle.com/datasets/kishanvavdara/nemotron-reasoning-traj | Useful for failure-slice and trajectory analysis patterns |
 | https://aitherium.com/blog/nemotron-reasoning-challenge-mirothinker-distillation/ | Public distillation notes and design pitfalls |
 
+Current bounded review artifact: `docs/analysis/EXTERNAL_BASELINE_REVIEW.md`.
+
 ## Update Procedure
 
 - Update this file whenever a notebook changes state from `scaffolded` to `active`, `validated`, or `superseded`.
