@@ -1,0 +1,6 @@
+# GAN-style refinement loop configuration (#34 / Wave E).
+# Only activate after SFT checkpoint exists and time/compute remain.
+
+max_iterations: 3
+confidence_threshold: 0.7
+cost_cap_per_iteration_usd: 20.0
