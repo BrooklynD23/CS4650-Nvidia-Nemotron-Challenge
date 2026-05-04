@@ -1,0 +1,53 @@
+{
+  "summary": "The notebook implementation is well-structured and clearly documented. It correctly replaces the scaffold with a full ingest→predict→normalize→score→report pipeline, proper normalization contract docs, EvalRecord attribution, per-category accuracy reporting, failure/drift analysis, a golden regression gate, and a round-trip validation cell. The supporting src/evaluation/ modules are clean, well-typed, and covered by a comprehensive test suite. One genuine logic bug exists in the stub predictor's wrong-answer generator for the numeral_system category: returning gold.lower() silently produces the correct answer for purely numeric gold strings (e.g. '1010', '10'), causing the stub to over-report accuracy vs. its stated 2/3 intent. All other issues are minor: a stale frozenset fallback when real data is loaded, and a simplified failure-reason classifier. No security concerns exist. The pipeline code itself is sound.",
+  "severity": "minor",
+  "issues": [
+    {
+      "category": "bug",
+      "severity": "warning",
+      "file": "notebooks/04_baseline_eval_and_normalization.ipynb",
+      "line": null,
+      "message": "In cell 'predictor-stub', _wrong_answer('numeral_system', gold) returns gold.lower(). For purely numeric gold values ('1010', '10') lowercasing is a no-op, so the stub returns the correct answer for examples not in _CORRECT_VAL_IDS (e.g. synth-num-003 with gold='10'). This silently inflates reported stub accuracy vs. the 2/3 stated in the comment.",
+      "suggestion": "Change the numeral_system wrong-answer branch to guarantee incorrectness: e.g. return gold.lower() if gold != gold.lower() else gold + '_wrong'. Simpler alternative: return a fixed sentinel like 'WRONG' for all categories when the natural wrong-answer cannot be derived."
+    },
+    {
+      "category": "bug",
+      "severity": "info",
+      "file": "notebooks/04_baseline_eval_and_normalization.ipynb",
+      "line": null,
+      "message": "_CORRECT_VAL_IDS is a hardcoded frozenset of synthetic IDs. When the ingest cell loads real val.jsonl (different example_ids), every real row falls outside the frozenset, making the stub return wrong answers for all examples and report 0% accuracy. This is expected behavior for a stub but is not documented in the stub cell itself.",
+      "suggestion": "Add a one-line comment in the predictor-stub cell: '# _CORRECT_VAL_IDS is only meaningful for synthetic rows; 0% is expected when real data is loaded.' This prevents confusion when real artifacts from #17/#18 become available."
+    },
+    {
+      "category": "maintainability",
+      "severity": "info",
+      "file": "notebooks/04_baseline_eval_and_normalization.ipynb",
+      "line": null,
+      "message": "The golden-gate stub heuristic (req.example_id.startswith('gold-')) answers all golden examples correctly. If real golden rows from issue #18 use IDs without this prefix, the gate will fail unexpectedly.",
+      "suggestion": "This is clearly documented in the predictor-doc cell. Add an explicit 'REMOVE this prefix check' comment at the heuristic line to ensure it is not missed when real inference is wired up."
+    },
+    {
+      "category": "test-coverage",
+      "severity": "info",
+      "file": "notebooks/04_baseline_eval_and_normalization.ipynb",
+      "line": null,
+      "message": "The drift analysis code path (report-drift cell) is never exercised: all stub failures are genuine wrong answers, so the output always reads 'No drift cases found'. A CI notebook run would never validate that branch.",
+      "suggestion": "Add one synthetic row whose stub wrong-answer is an un-stripped variant of the gold (e.g. gold='42', wrong='42 ') so the drift analysis prints a real result and the detection code path is validated on every notebook execution."
+    },
+    {
+      "category": "maintainability",
+      "severity": "info",
+      "file": "notebooks/04_baseline_eval_and_normalization.ipynb",
+      "line": null,
+      "message": "The failure analysis cell classifies failures only as 'blank_prediction' or 'exact_match_fail'. Category-specific failure modes (case drift, numeric rounding, bit-flip) visible from the stub wrong-answer function are not surfaced in the reason field.",
+      "suggestion": "Low priority — the drift analysis cell already surfaces normalizer alternatives. Optionally add a 'wrong_case' bucket (normalized.lower() == gold.lower()) as a forward-looking diagnostic for the real model."
+    }
+  ],
+  "recommendations": [
+    "Fix the numeral_system wrong-answer branch in the stub predictor to always produce an incorrect answer for numeric gold strings — this is the only genuine logic bug and causes inflated stub accuracy.",
+    "When issue #17/#18 artifacts become available, the pipeline requires no changes; only the ingest cells need their fallback paths removed.",
+    "Add one 'drift sentinel' row (gold with trailing whitespace) so the drift analysis code path is exercised and visible in notebook output on every run.",
+    "The src/evaluation/ source modules are production-quality: frozen dataclasses, fail-closed validation, and comprehensive pytest coverage — no changes recommended there.",
+    "Consider running the notebook via nbconvert --execute in CI to guard against cell-ordering regressions as new cells are added in later waves."
+  ]
+}

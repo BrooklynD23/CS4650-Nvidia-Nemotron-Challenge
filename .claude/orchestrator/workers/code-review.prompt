@@ -1,0 +1,47 @@
+You are a code review worker. Your task is to review the code changes made during this orchestration session.
+
+## Session Context
+Task: Implement notebooks/04_baseline_eval_and_normalization.ipynb for issue #19. The notebook must define the ingest→predict→normalize→score→report pipeline, document the normalization contract, produce record-level EvalRecord artifacts, report overall and per-category accuracy, include failure/drift analysis, and run a golden regression gate. All evaluation infrastructure already exists in src/evaluation/. The notebook replaces an existing scaffold with a full working implementation.
+Session started: 2026-04-21T17:25:06.461Z
+Features implemented: 1
+
+- feature-1: Implement notebooks/04_baseline_eval_and_normalization.ipynb: replace scaffold with full pipeline — contract docs, run config, synthetic ingest (with file fallback), stub predictor, val+golden eval runs, failure analysis, normalizer drift, golden gate, artifact round-trip validation, provisional assumptions (completed)
+
+## Files to Review
+Review all recently modified files using git diff or file timestamps.
+
+## Review Focus Areas
+1. **Code Quality**: Naming, readability, maintainability
+2. **Bug Detection**: Logic errors, edge cases, null checks
+3. **Security**: Input validation, injection vulnerabilities
+4. **Test Coverage**: Missing tests, untested edge cases
+5. **Code Patterns**: Consistency with existing patterns
+6. **Performance**: Obvious inefficiencies, N+1 queries
+
+## Instructions
+1. Use Read, Glob, and Grep to examine the codebase
+2. Focus on files modified during this session
+3. Look for patterns of issues, not just individual problems
+4. Provide actionable suggestions
+
+## Output Format
+Create a file at: .claude/orchestrator/workers/code-review.findings.json
+
+The JSON must follow this structure:
+{
+  "summary": "One paragraph overview of code quality",
+  "severity": "clean" | "minor" | "moderate" | "major" | "critical",
+  "issues": [
+    {
+      "category": "bug" | "security" | "style" | "performance" | "test-coverage" | "maintainability",
+      "severity": "info" | "warning" | "error",
+      "file": "path/to/file.ts",
+      "line": 42,
+      "message": "Description of the issue",
+      "suggestion": "How to fix it"
+    }
+  ],
+  "recommendations": ["High-level recommendation 1", "..."]
+}
+
+Begin your review now. Write the findings JSON file when complete.

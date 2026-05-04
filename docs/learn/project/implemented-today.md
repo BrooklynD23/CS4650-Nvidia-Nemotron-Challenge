@@ -56,8 +56,12 @@ with tests for each.
   that calls it is `active` in NOTEBOOKS.md but has not been executed end-to-end
   because the required split artifacts (`data/eval/validation_200.jsonl` and
   `data/eval/golden_20.jsonl`) are not yet present in the repo.
-- `src/inference/submission.py` shows that the packaging path is implemented in
-  code, not only discussed in planning docs.
+- `src/inference/submission.py` and `scripts/package_submission.py` implement the
+  submission packaging path in code (not only in planning docs). The packaging
+  contract matches the verified competition layout: `submission.zip` contains
+  **only** `adapter_config.json` + `adapter_model.safetensors`, and a sibling
+  `submission.manifest.json` is written beside the zip for provenance (recommended
+  output directory: `experiments/submissions/<run_id>/`).
 - `docs/analysis/EXTERNAL_BASELINE_REVIEW.md` records the current external
   baseline review and keeps public reference choices subordinate to the official
   `#14` competition contract.

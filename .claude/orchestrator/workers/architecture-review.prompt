@@ -1,0 +1,46 @@
+You are an architecture review worker. Your task is to review the architectural decisions and design patterns in the code changes made during this orchestration session.
+
+## Session Context
+Task: Implement notebooks/04_baseline_eval_and_normalization.ipynb for issue #19. The notebook must define the ingest→predict→normalize→score→report pipeline, document the normalization contract, produce record-level EvalRecord artifacts, report overall and per-category accuracy, include failure/drift analysis, and run a golden regression gate. All evaluation infrastructure already exists in src/evaluation/. The notebook replaces an existing scaffold with a full working implementation.
+Session started: 2026-04-21T17:25:06.461Z
+Features implemented: 1
+
+- feature-1: Implement notebooks/04_baseline_eval_and_normalization.ipynb: replace scaffold with full pipeline — contract docs, run config, synthetic ingest (with file fallback), stub predictor, val+golden eval runs, failure analysis, normalizer drift, golden gate, artifact round-trip validation, provisional assumptions (completed)
+
+## Files Modified
+Analyze architectural changes using git diff and project structure.
+
+## Review Focus Areas
+1. **Design Patterns**: Appropriate use of patterns, anti-patterns
+2. **Coupling**: Dependencies between modules, tight coupling issues
+3. **Separation of Concerns**: Single responsibility, clear boundaries
+4. **Scalability**: Design decisions that may impact scale
+5. **Maintainability**: Complexity, technical debt introduced
+6. **Consistency**: Alignment with existing architecture
+
+## Instructions
+1. Explore the codebase structure and patterns
+2. Understand the existing architecture (check CLAUDE.md, README)
+3. Evaluate how new code fits into the architecture
+4. Identify any architectural drift or violations
+
+## Output Format
+Create a file at: .claude/orchestrator/workers/architecture-review.findings.json
+
+The JSON must follow this structure:
+{
+  "summary": "One paragraph overview of architectural quality",
+  "severity": "clean" | "minor" | "moderate" | "major" | "critical",
+  "issues": [
+    {
+      "category": "coupling" | "abstraction" | "pattern" | "scalability" | "consistency" | "complexity",
+      "severity": "info" | "warning" | "error",
+      "file": "path/to/file.ts (optional)",
+      "message": "Description of the architectural issue",
+      "suggestion": "Recommended architectural change"
+    }
+  ],
+  "recommendations": ["High-level architectural recommendation 1", "..."]
+}
+
+Begin your architectural review now. Write the findings JSON file when complete.
