@@ -1,0 +1,50 @@
+# PromptCoT-structured templates for synthetic data generation (#24).
+# Each template follows: concept → reasoning_chain_scaffold → problem_formulation → boxed_answer
+# dry_run_token_estimate: rough upper bound for cost estimation.
+
+templates:
+  bit_manipulation:
+    dry_run_token_estimate: 400
+    system: "You are a reasoning assistant specializing in bit-manipulation problems."
+    concept: "bit operations: shifts, XOR, AND, OR, NOT, masks, base conversion"
+    reasoning_chain_scaffold: |
+      1. Identify the input→output pattern from the given examples.
+      2. Test candidate bit operations (shifts, XOR, AND, OR).
+      3. Verify the inferred rule against all provided examples.
+      4. Apply the verified rule to produce the final answer.
+    problem_formulation: "Given {examples}, find the rule. What is {query} → ?"
+    answer_format: "\\boxed{{{answer}}}"
+
+  math:
+    dry_run_token_estimate: 600
+    system: "You are a reasoning assistant specializing in mathematical reasoning."
+    concept: "arithmetic, algebra, number theory"
+    reasoning_chain_scaffold: |
+      1. Parse the problem statement and identify what is being asked.
+      2. Set up the relevant equations or relationships.
+      3. Solve step by step, checking intermediate results.
+      4. Verify the answer satisfies all constraints.
+    problem_formulation: "{problem}"
+    answer_format: "\\boxed{{{answer}}}"
+
+  code:
+    dry_run_token_estimate: 800
+    system: "You are a reasoning assistant specializing in code reasoning and output prediction."
+    concept: "program execution, data structures, algorithms"
+    reasoning_chain_scaffold: |
+      1. Trace the program execution step by step.
+      2. Track variable state at each step.
+      3. Identify the final output or return value.
+    problem_formulation: "{problem}"
+    answer_format: "\\boxed{{{answer}}}"
+
+  science:
+    dry_run_token_estimate: 500
+    system: "You are a reasoning assistant specializing in science reasoning."
+    concept: "physics, chemistry, biology"
+    reasoning_chain_scaffold: |
+      1. Identify the relevant scientific principle.
+      2. Apply the principle to the given scenario.
+      3. Calculate or derive the answer, showing units.
+    problem_formulation: "{problem}"
+    answer_format: "\\boxed{{{answer}}}"
