@@ -23,3 +23,16 @@ The only baseline artifacts currently present are the stub runs from notebook `0
 ## Next Execution Step
 
 After issue `#18` outputs the real split files and issue `#19` produces a baseline run on the same dataset version, run notebook `05` end-to-end in a CUDA environment. The notebook will then overwrite this file with ranked findings and write the aggregate CSV.
+
+
+## Prompt Candidate Notes
+
+### final-boxed-answer-v1
+
+Prompt idea:
+Ask the model to solve normally, but always end with:
+
+Final answer: \boxed{...}
+
+Why:
+The evaluator expects boxed answers, so this may reduce formatting errors.
