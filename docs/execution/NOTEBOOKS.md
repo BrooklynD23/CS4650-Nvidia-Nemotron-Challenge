@@ -36,7 +36,7 @@ Every local notebook must include the following sections inside the notebook:
 | `notebooks/03_validation_and_golden_set.ipynb` | `#18` | Define validation split and golden-set regression policy | scaffolded |
 | `notebooks/04_baseline_eval_and_normalization.ipynb` | `#19` | Define exact-match eval records and normalization rules | active |
 | `notebooks/05_prompting_and_decode_sweeps.ipynb` | `#21` | Compare prompt templates and decode settings; writes ranked sweep CSV + findings doc | active |
-| `notebooks/06_trajectory_collection_and_error_slices.ipynb` | `#22` | Document failure slices and targeted follow-up loops | scaffolded |
+| `notebooks/06_trajectory_collection_and_error_slices.ipynb` | `#22` | Classify EvalRecord failures into error types; produce retry-candidate set and error-slice taxonomy | active |
 | `notebooks/07_solver_framework_design.ipynb` | `#23` | Specify the category-aware solver interface and fallback policy | scaffolded |
 | `notebooks/08_synthetic_data_recipe.ipynb` | `#24` | Specify teacher, filter, and provenance rules for synthetic data | scaffolded |
 | `notebooks/09_sft_runbook_and_masking.ipynb` | `#25` | Specify LoRA/QLoRA runbook, masking, and checkpoint policy | scaffolded |
