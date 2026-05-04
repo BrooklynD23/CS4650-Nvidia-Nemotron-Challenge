@@ -21,8 +21,8 @@ then keep issue comments and repo docs updated as artifacts become real.
   starting.
 - If a task changes a shared contract, it needs human review and, when noted,
   architecture review.
-- Do not run real SFT/QLoRA training until `#14` freezes the base model,
-  scoring contract, LoRA constraints, and submission rules.
+- Do not run real SFT/QLoRA training unless the run conforms to the verified
+  `#14` base model, scoring contract, LoRA constraints, and submission rules.
 - Do not promote prompt-sweep results until the output-parser contract is
   resolved and comparisons use compatible scoring.
 - Do not promote or submit adapters unless the golden gate from `#18` and the
@@ -95,9 +95,9 @@ Do not begin the dependent task until the upstream owner confirms:
 | `#11` | Open | Epic | `#25` SFT runbook/training |
 | `#12` | Open | Epic | `#13`, `#15` runbook/review harness |
 | `#13` | Closed | Execution | Notebook template + citation rubric |
-| `#14` | Closed | Execution | Constraints notebook, still externally gated |
+| `#14` | Closed | Execution | Verified constraints contract |
 | `#15` | Closed | Execution | Agent/human review harness |
-| `#16` | Closed | Execution | External baseline deltas, still `#14` gated |
+| `#16` | Closed | Execution | External baseline deltas; must conform to `#14` |
 | `#17` | Closed | Execution | Schema/code foundation |
 | `#18` | Closed | Execution | Split/golden code, real artifacts missing |
 | `#19` | Closed | Execution | Eval code, real baseline missing |
@@ -163,7 +163,7 @@ Out of scope / unable to confirm (noted in COMPETITION.md, not blocking):
 General chat warning:
 
 - Before any training, scoring promotion, or packaging promotion, confirm with
-  the PM that `#14` facts above are still current.
+  the PM that the verified `#14` contract above is still the working contract.
 - The 4-module target set from the demo is the reference; do not expand to
   konbu17's 9-module set without PM sign-off.
 
@@ -171,22 +171,24 @@ General chat warning:
 
 Owner lane: research / baseline comparison
 
-- [ ] Restore or re-fetch `data/external/konbu17/**` if repo-local evidence is
-  needed; current local `data/` has only placeholders.
-- [ ] Pull or manually capture konbu17 notebook facts:
+- [x] Create `docs/analysis/EXTERNAL_BASELINE_REVIEW.md` for the bounded
+  Tong (`tonghuikang`) + konbu17 review.
+- [x] Capture konbu17 notebook facts from existing repo-local evidence:
   base model, load recipe, LoRA config, target modules, masking behavior,
   dataset, eval protocol, packaging.
-- [ ] Review Tong Hui Kang public pipeline for masking, augmentation, weighting,
-  solver/teacher patterns, and packaging ideas.
-- [ ] Produce an Adopt / Reject / Gate matrix.
-- [ ] Link each Adopt/Gate decision to downstream issues:
+- [x] Review Tong (`tonghuikang`) public pipeline for masking, augmentation,
+  weighting, solver/teacher patterns, and packaging ideas.
+- [x] Produce an Adopt / Reject / Gate matrix.
+- [x] Link each Adopt/Gate decision to downstream issues:
   `#19`, `#20`, `#21`, `#23`, `#24`, `#25`.
-- [ ] Identify any baseline assumptions that conflict with exact-match scoring
+- [x] Identify any baseline assumptions that conflict with exact-match scoring
   or rank `<=32`.
 
 Blocked by:
 
-- `#14` for final base-model and output-format decisions.
+- None for the bounded Tong + konbu17 review. Future reproduction work remains
+  blocked by source availability, license/provenance capture, and PM signoff for
+  any baseline choice that deviates from the verified `#14` contract.
 
 General chat warning:
 
@@ -212,7 +214,7 @@ Owner lane: data
 
 Blocked by:
 
-- `#14` if Kaggle data/rules access remains blocked.
+- Kaggle data/rules access if the official dataset cannot be downloaded.
 
 General chat warning:
 
@@ -235,7 +237,8 @@ Owner lane: evaluation
 Blocked by:
 
 - `#17` canonical dataset rows.
-- `#14` scoring contract if selection depends on answer normalization.
+- Verified `#14` scoring contract must be applied if selection depends on
+  answer normalization.
 
 General chat warning:
 
@@ -260,7 +263,6 @@ Owner lane: evaluation
 
 Blocked by:
 
-- `#14` scoring contract.
 - `#17` canonical rows.
 - `#18` real eval artifacts.
 
@@ -286,7 +288,6 @@ Owner lane: packaging / release
 
 Blocked by:
 
-- `#14` final packaging rules.
 - `#19` eval provenance inputs.
 - `#25` real adapter output for final package.
 
@@ -314,7 +315,6 @@ Blocked by:
 
 - `#18` validation/golden files.
 - `#19` baseline run.
-- `#14` if output format is still unknown.
 - Pending parser-contract review.
 
 General chat warning:
@@ -416,7 +416,8 @@ Blocked by:
 
 - `#22` failure slices.
 - `#23` solver/teacher framework.
-- `#14` scoring/output format if completions include reasoning or boxed answers.
+- Verified `#14` scoring/output format must be applied if completions include
+  reasoning or boxed answers.
 
 General chat warning:
 
@@ -427,8 +428,8 @@ General chat warning:
 
 Owner lane: training
 
-- [ ] Remove or revise any `r=64` plan/config assumptions; default to rank
-  `<=32` unless Kaggle rules prove otherwise.
+- [x] Remove or revise stale `r=64` plan/config assumptions in coordination
+  docs; default to rank `<=32` per the verified `#14` contract.
 - [ ] Implement expected HPC scripts from the runbook:
   - `scripts/hpc/preflight.sh`
   - `scripts/hpc/tokenize_dataset.py`
@@ -438,8 +439,8 @@ Owner lane: training
   - `scripts/hpc/regression_gate.py`
   - `scripts/hpc/package_adapter.py`
   - `scripts/hpc/resume_from_latest.py`
-- [ ] Add training configs only after `#14` freezes base model and adapter
-  constraints.
+- [ ] Add training configs only when they use the verified `#14` base model and
+  adapter constraints.
 - [ ] Implement masking tests so prompt/user tokens are not trained unless
   explicitly intended.
 - [ ] Run a tiny SFT smoke job before any production run.
@@ -449,15 +450,14 @@ Owner lane: training
 
 Blocked by:
 
-- `#14` base model, LoRA constraints, scoring contract.
 - `#19` eval/golden gate.
 - `#23` solver framework if training data uses solver outputs.
 - `#24` synthetic data recipe for generated data.
 
 General chat warning:
 
-- Before submitting any GPU job, ask PM whether `#14` is frozen and ask
-  evaluation owner whether golden/validation gates are ready.
+- Before submitting any GPU job, ask PM whether the run uses the current `#14`
+  contract and ask evaluation owner whether golden/validation gates are ready.
 
 ### `#12` / `#13` / `#15` - Runbook, Templates, Review Harness
 
@@ -468,7 +468,7 @@ Owner lane: PM / process
 - [ ] Keep `docs/execution/SPRINTS.md`,
   `docs/execution/ISSUE_REVIEW_HARNESS.md`, and
   `docs/execution/NOTEBOOKS.md` synchronized.
-- [ ] Decide whether `NOTEBOOKS.md` is the canonical status source.
+- [x] Treat `docs/execution/NOTEBOOKS.md` as the canonical status source.
 - [ ] Update stale notebook plan statuses or explicitly mark them as historical
   plans.
 - [ ] Document reproducible submission flow after first valid adapter.
@@ -487,15 +487,16 @@ General chat warning:
 - [ ] Reconcile issue parent/dependency metadata against
   `docs/execution/SPRINTS.md`.
 - [ ] Break the `#18` / `#19` dependency cycle.
-- [ ] Decide whether `#16` formally depends on `#14` or only gates final
-  recommendations on `#14`.
+- [x] Resolve `#16` / `#14` dependency: the bounded baseline review is not
+  blocked by `#14`, but every recommendation must conform to the verified `#14`
+  contract.
 - [ ] Decide whether `#17` formally depends on `#15`.
 - [ ] Decide whether `#20` should list `#25` as a real dependency for final
   packaging, while keeping dummy packaging independent.
 - [ ] Align `#20` zip contract across all docs.
 - [ ] Align golden threshold policy: strict `20/20` vs any tolerated miss.
-- [ ] Propagate one eval-format policy after `#14` resolves exact-match vs
-  boxed output.
+- [x] Propagate the verified `#14` eval-format policy: boxed extraction with
+  exact match or `1e-3` numeric tolerance.
 - [ ] Add a producer issue for curated training data if `#22`/`#24`/`#25`
   require `data/processed/training_curated.jsonl`.
 - [ ] Align `#22` output paths with `#24` input paths.
@@ -529,13 +530,15 @@ Use new child issues instead of expanding epics directly.
   - Blocked by: `#23`, `#24`
 - [ ] `#31`: SFT masking smoke-run implementation.
   - Parent: `#11`
-  - Blocked by: `#14`, `#19`
+  - Blocked by: `#19`; must conform to the verified `#14` contract.
 - [ ] `#32`: Accepted dummy or first-adapter Kaggle submission evidence.
   - Parent: `#5`, `#12`
-  - Blocked by: `#14`, `#20`
-- [ ] `#33`: External baseline reproduction pass for konbu17/Tong-style ideas.
+  - Blocked by: `#20`; must conform to the verified `#14` contract.
+- [ ] `#33`: External baseline reproduction pass for konbu17 and Tong
+  (`tonghuikang`) ideas.
   - Parent: `#2`
-  - Blocked by: baseline source availability and `#14`
+  - Blocked by: baseline source availability, license/provenance capture, and
+    PM signoff for deviations from the verified `#14` contract.
 - [ ] `#34`: Optional RL/GRPO planning.
   - Parent: future training/research epic
   - Blocked by: strong SFT baseline and stable reward/eval contract.
@@ -550,7 +553,7 @@ Primary issues:
 
 Immediate tasks:
 
-- [ ] Freeze Kaggle constraints.
+- [x] Freeze Kaggle constraints in `docs/architecture/COMPETITION.md`.
 - [ ] Fix or assign process/test failure.
 - [ ] Resolve status/dependency drift.
 - [ ] Own general-chat dependency checks and review gates.
@@ -607,7 +610,7 @@ Primary issues:
 Immediate tasks:
 
 - [ ] Keep packaging tests green.
-- [ ] Implement training preflight only after constraints freeze.
+- [ ] Implement training preflight against the verified `#14` constraints.
 - [ ] Prepare synthetic-data recipe after solver/failure slices exist.
 - [ ] Run tiny SFT smoke job before production training.
 

@@ -22,7 +22,7 @@ Implement a reproducible, verifiable submission pipeline that packages a LoRA ad
 
 ## 3. Strategy — How We Aim To Accomplish It
 
-1. **Enumerate competition-required files** from `#14` frozen constraints: adapter weights (safetensors), config.json, README.md, optional metadata.json.
+1. **Enumerate competition-required files** from `#14` frozen constraints: `adapter_config.json` and `adapter_model.safetensors` at the zip root. Keep README, manifest, and provenance metadata outside the submitted zip.
 2. **Implement `package(adapter_path, output_dir, config_dict)`**: copy adapter → compute SHA256 hash → write manifest.json (schema validated) → zip bundle.
 3. **Implement `dry_run(base_model, adapter_path, dry_run_config)`**: load base + adapter, run Phase 1.2 smoke test (2^10 mod 7), verify output format.
 4. **Run golden_20 validation**: load golden_20 from `data/eval/golden_20.jsonl`, verify all 20 pass (100% accuracy requirement); fail immediately if any drop.
@@ -62,7 +62,7 @@ Implement a reproducible, verifiable submission pipeline that packages a LoRA ad
 
 - **Setup**: Base model loaded, dummy (null identity) adapter created, golden_20.jsonl and validation_200.jsonl present
 - **Action**: Call `package(adapter, "submissions/2026-04-20_test/")` → call `dry_run_smoke_test()` → call `dry_run_golden_set()` → call `dry_run_validation_slice()`
-- **Expected**: Manifest JSON written; all three dry-run checks pass; golden_20 accuracy = 20/20; validation_50 mean accuracy within ±2σ of `#19` baseline; zip contains adapter_model.safetensors, manifest.json, README.md
+- **Expected**: Manifest JSON written outside the zip; all three dry-run checks pass; golden_20 accuracy = 20/20; validation_50 mean accuracy within +/-2 sigma of `#19` baseline; zip contains only `adapter_config.json` and `adapter_model.safetensors` at root.
 
 ### 5.2 Alternative / Fallback
 
@@ -93,9 +93,9 @@ Implement a reproducible, verifiable submission pipeline that packages a LoRA ad
 
 - **Risk**: Competition format changes between `#14` freeze (April 2026) and submission deadline → **Mitigation**: Pluggable packager abstraction in submission.py; implement CompetitionFormatV1 class; v2 format can be added without breaking training code.
 - **Risk**: Timezone drift on deadline (uploaded manifest timestamp vs Kaggle server clock) → **Mitigation**: Use UTC timestamps, include timezone in manifest, document Kaggle deadline in submission checklist.
-- **Risk**: Adapter size exceeds competition max (check `#14`; assume ~30-50 MB for safetensors) → **Mitigation**: Pre-flight check in packaging; raise exception if > limit; document limit in checklist.
+- **Risk**: Adapter size exceeds unconfirmed competition max (no explicit file-size limit found in `#14`) → **Mitigation**: Pre-flight check in packaging; warn if adapter is unusually large and monitor real submission feedback.
 - **Risk**: Final submitted adapter differs in SHA256 from dry-run (accidental overwrite, file corruption) → **Mitigation**: Compute hash before zipping; store in manifest; re-hash after zip and verify; prevent re-upload of same adapter without explicit confirmation.
-- **Open question**: Does Kaggle accept optional metadata.json alongside safetensors or require a specific format? → **Who answers**: Review `#14` frozen constraints and Kaggle submission demo notebook; hard-code format based on demo.
+- **Resolved question**: Kaggle demo requires root `adapter_config.json` and `adapter_model.safetensors`; do not include optional metadata or README inside `submission.zip` unless the official contract changes.
 
 ## 8. Artifacts & Handoff
 
