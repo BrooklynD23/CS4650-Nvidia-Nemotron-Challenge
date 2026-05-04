@@ -356,8 +356,8 @@ Owner lane: solver design
   `verify(pred, gold) -> bool`.
 - [ ] Define fallback policy for solver failure and LLM teacher usage.
 - [ ] Define logging and failure-mode taxonomy.
-- [ ] Decide whether `#15` is a real dependency for this issue or just process
-  boilerplate.
+- [x] Decide whether `#15` is a real dependency for this issue or just process
+  boilerplate. Resolved: no — `#15` is the review harness only; `src/inference/solver.py` is not blocked by it.
 - [ ] Link downstream implementation issues for individual category solvers.
 
 Blocked by:
@@ -407,7 +407,8 @@ Owner lane: synthetic data
 - [ ] Define quality filters:
   dedupe, answer validity, category validity, length limits, solver confidence,
   provenance completeness.
-- [ ] Define output schema as `SFTExample` or a documented derivative.
+- [x] Define output schema as `SFTExample` or a documented derivative.
+  Resolved: `SFTExample` is defined and frozen in `src/contracts.py:97`; use as-is.
 - [ ] Produce small smoke synthetic set before large generation.
 - [ ] Add cost caps for paid APIs and dry-run token/cost estimates.
 - [ ] Document artifact paths and dataset fingerprint.
