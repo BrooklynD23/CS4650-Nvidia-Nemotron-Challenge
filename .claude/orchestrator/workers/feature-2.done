@@ -1,0 +1,17 @@
+## Feature T1-D: SYNTHETIC_PROVENANCE.md
+
+### What was implemented
+Created `docs/architecture/SYNTHETIC_PROVENANCE.md` (~80 lines) documenting:
+1. Artifact layout: `data/synthetic/<run_id>.jsonl` + `.sha256` sidecar, with run_id format `YYYYMMDD_8hexchars`
+2. Provenance dict schema: 4 fields (`teacher`, `generated_at`, `source_run_id`, `solver_confidence`) with types, example values, and descriptions
+3. Fingerprint algorithm: `hashlib.sha256` over raw `.jsonl` bytes, written as sidecar immediately post-run
+4. Step-by-step re-verification: locate pair → recompute digest → diff against sidecar → validate provenance fields → check `\boxed{}` format
+
+Also updated `docs/architecture/README.md` to list `SOLVER_DESIGN.md` and `SYNTHETIC_PROVENANCE.md` in the Files index.
+
+### Verification
+- `pytest tests/data/test_synthetic.py tests/data/test_gan_refine.py`: 21/21 passed
+- `pytest tests/ (remaining)`: 220 passed, 1 skipped
+
+### Commit
+31c25a5 docs(synthetic): add SYNTHETIC_PROVENANCE.md with artifact layout, provenance schema, and re-verification steps

@@ -1,0 +1,26 @@
+## Feature 4 Complete: SFT Loss Masking
+
+### Files Created
+- src/training/__init__.py — empty package marker
+- src/training/sft_trainer.py — implements apply_loss_mask() and IGNORE_INDEX
+- tests/training/__init__.py — empty package marker
+- tests/training/test_masking.py — 4 tests for loss masking behavior
+
+### Implementation Summary
+apply_loss_mask(input_ids, labels, tokenizer, mask_role='user') -> list[int]:
+- Reads tokenizer.role_start_ids: dict[str, list[int]] to find turn boundaries
+- Scans input_ids for each role's marker token sequence using _find_subsequence()
+- Sets all non-assistant segment positions to IGNORE_INDEX (-100)
+- Raises ValueError if no assistant turn is found
+- Returns a new list (immutable — does not mutate input labels)
+
+### Tests (all pass)
+- test_user_tokens_masked: user segment positions == -100
+- test_assistant_tokens_unmasked: assistant segment labels unchanged
+- test_system_tokens_masked: system segment positions == -100
+- test_all_masked_raises: ValueError when no assistant marker in input_ids
+
+### Verification
+- pytest tests/training/test_masking.py: 4 passed
+- Full suite: 224 passed, 1 skipped, 0 failures
+- Commit: feat(training): implement apply_loss_mask for SFT loss masking

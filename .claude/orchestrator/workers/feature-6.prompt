@@ -1,0 +1,70 @@
+You are a worker agent focused on implementing a single feature.
+
+## Your Task
+T2-C: Create scripts/hpc/ directory with all 8 HPC scripts. Read docs/execution/plans/issue-25-hpc-queue-runbook.md first for full spec. (1) preflight.sh: bash script checking CUDA available, model weights path exists, dataset .sha256 valid, disk space >50GB, required Python packages importable. Exit 0 on pass, 1 on fail with clear error messages. (2) tokenize_dataset.py: load JSONL of SFTExample rows, apply chat template, call apply_loss_mask() from src.training.sft_trainer, save tokenized .pt shards, accept --input/--output/--config args. (3) submit_sft.sbatch: SLURM job (4 GPUs, 64GB RAM, 24h), activates venv, runs tokenize_dataset.py then a training loop stub. (4) submit_rl.sbatch: similar SLURM job for RL phase. (5) checkpoint_policy.py: given a checkpoint dir writes sidecar files trainer_state.json/run_config.json/metrics.jsonl/git_sha.txt/dataset_fingerprint.txt and enforces keep-last-3-plus-best policy. (6) regression_gate.py: loads EvalRecord JSONL + golden SplitArtifactRow JSONL, calls run_gate() from src.evaluation.golden_gate (already implemented), exits 0 on pass / 1 on fail — accept --eval-records and --golden args. (7) package_adapter.py: thin wrapper around src.inference.submission (already implemented), accepts --adapter-dir/--output-dir/--base-model-id/--adapter-rank args. (8) resume_from_latest.py: scans checkpoint dir for highest step number, prints the --resume_from_checkpoint path to stdout. All scripts must have --help, type annotations where Python, and shebang lines.
+
+## Orchestration Context
+Close the remaining implementation gaps identified in issues #10/#24 (synthetic data) and #11/#25 (SFT training pipeline) so the project can start fine-tuning. The approved plan is at /home/danny/.claude/plans/elegant-floating-russell.md. Key constraint: base model is metric/nemotron-3-nano-30b-a3b-bf16/transformers/default, lora_r <= 32, answers use \boxed{} format, SFTExample schema is frozen in src/contracts.py:97.
+
+## Project Context Files
+### From CLAUDE.md:
+# CLAUDE.md (Router)
+
+Route your task to the right docs. Keep context minimal — open only what your task needs.
+
+| Task | Go to |
+|------|-------|
+| Competition rules, dataset, scoring | `docs/architecture/COMPETITION.md` |
+| System / model design | `docs/architecture/ARCHITECTURE.md` |
+| Execution plan (source of truth) | `docs/planning/plan_v0.2.md` |
+| Sprint / issue tracking | `docs/execution/SPRINTS.md` |
+| Notebook registry & status | `docs/execution/NOTEBOOKS.md` |
+| Current repo state | `docs/learn/project/implemented-today.md` |
+| Analysis & adversarial review | `docs/analysis/` |
+| All docs index | `docs/README.md` |
+
+## Working rules
+
+- Reusable code → `src/`; keep notebooks thin.
+- Large artifacts (`data/`, `adapters/`, `experiments/`) stay out of git.
+- Every notebook must have a row in `docs/execution/NOTEBOOKS.md`.
+
+
+
+## Instructions
+1. Focus ONLY on implementing this specific feature
+2. Make small, incremental changes
+3. Test your changes as you go
+4. When you are DONE:
+   - Commit your changes following conventional commit format:
+     * Use: feat(scope), fix(scope), docs(scope), refactor(scope), test(scope)
+     * Example: "feat(auth): add user authentication system"
+     * Add footer: "🤖 Committed by claude-swarm worker feature-6"
+   - Run the following verification commands and ensure they pass:
+     * `pytest tests/data/test_synthetic.py tests/data/test_gan_refine.py -v --tb=short`
+     * `pytest tests/ -v --tb=short --ignore=tests/data/test_synthetic.py --ignore=tests/data/test_gan_refine.py -q`
+     * If any verification command fails, fix the issue before proceeding
+   - Create a file at: .claude/orchestrator/workers/feature-6.done
+     with a brief summary of what you implemented
+
+## Important
+- Do not work on other features
+- If you encounter a blocker, document it in the .done file and stop
+- Keep changes minimal and focused
+- Always commit using conventional commit format with the worker attribution footer
+- The .claude/ directory is already gitignored - don't worry about it
+
+## Commit Format Example
+```bash
+# Add only the specific files you changed for this feature
+git add src/path/to/file1.ts src/path/to/file2.ts
+
+# Commit with subject and attribution footer
+git commit -m "feat(feature-name): implement the feature" -m "🤖 Committed by claude-swarm worker feature-6"
+```
+
+
+## Additional Context
+Read docs/execution/plans/issue-25-hpc-queue-runbook.md fully before writing any script. Also read src/training/sft_trainer.py (created in batch 1) for apply_loss_mask signature, src/evaluation/golden_gate.py for run_gate() signature, and src/inference/submission.py for the packager API. Create scripts/hpc/ directory then all 8 scripts. For regression_gate.py: the golden_gate module has run_gate(eval_records, golden_rows) returning a GoldenGateResult with .passed bool — load both as JSONL, reconstruct the dataclass objects, call run_gate, exit sys.exit(0 if result.passed else 1). For package_adapter.py: look at how scripts/package_submission.py works and mirror that pattern using src.inference.submission. Make all Python scripts executable (chmod +x equivalent — add shebang #!/usr/bin/env python3). Make preflight.sh executable.
+
+Begin implementing the feature now.

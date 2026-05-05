@@ -1,0 +1,30 @@
+## Feature 6: scripts/hpc/ — 8 HPC runbook scripts
+
+### Status: COMPLETE
+### Commit: 801e309
+
+### What was implemented
+
+Created scripts/hpc/ with all 8 scripts from issue-25-hpc-queue-runbook.md:
+
+1. preflight.sh — frozen #14 contract gate, CUDA, weights path, SHA256 dataset
+   validation, disk space >50 GB, Python package imports; --show / --write-config modes
+2. tokenize_dataset.py — SFTExample JSONL → .pt shards via chat template +
+   apply_loss_mask(); writes dataset_fingerprint.json; args: --input/--output/--config
+3. submit_sft.sbatch — SLURM (4 GPU, 64 GB, 24 h); preflight → tokenize → SFT stub →
+   checkpoint_policy
+4. submit_rl.sbatch — same SLURM shape; ALLOW_RL=1 opt-in; verifies SFT best/ before RL
+5. checkpoint_policy.py — writes sidecar files (trainer_state.json, run_config.json,
+   metrics.jsonl, git_sha.txt, dataset_fingerprint.txt); keep-last-3-plus-best rotation
+6. regression_gate.py — EvalRecord + SplitArtifactRow JSONL → evaluate_golden_gate() →
+   exit 0/1; args: --eval-records/--golden
+7. package_adapter.py — thin wrapper around src.inference.submission.build_submission;
+   args: --adapter-dir/--output-dir/--base-model-id/--adapter-rank
+8. resume_from_latest.py — scans step-XXXXX dirs, prints highest-step absolute path;
+   args: --checkpoint-dir OR --run-tag
+
+All scripts have --help, shebang lines, type annotations (Python), and are executable.
+
+### Verification
+- pytest tests/data/test_synthetic.py tests/data/test_gan_refine.py: 24 passed
+- pytest tests/ (remaining): 224 passed, 1 skipped

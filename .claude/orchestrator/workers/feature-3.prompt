@@ -1,0 +1,70 @@
+You are a worker agent focused on implementing a single feature.
+
+## Your Task
+T2-A: Create three training config YAML files. (1) configs/lora_baseline.yaml: base_model: metric/nemotron-3-nano-30b-a3b-bf16/transformers/default, lora_r: 32, lora_alpha: 64, lora_dropout: 0.05, target_modules: [in_proj, out_proj, up_proj, down_proj], load_in_4bit: false, torch_dtype: bfloat16, trust_remote_code: true. (2) configs/lora_qlora.yaml: same but load_in_4bit: true and lora_r: 16. (3) configs/smoke_sft.yaml: extends: configs/lora_baseline.yaml, max_steps: 100, per_device_train_batch_size: 1, dataset_max_rows: 1000, save_steps: 50, gradient_accumulation_steps: 4. These must match the frozen constraints in docs/architecture/COMPETITION.md and docs/execution/plans/issue-25-hpc-queue-runbook.md.
+
+## Orchestration Context
+Close the remaining implementation gaps identified in issues #10/#24 (synthetic data) and #11/#25 (SFT training pipeline) so the project can start fine-tuning. The approved plan is at /home/danny/.claude/plans/elegant-floating-russell.md. Key constraint: base model is metric/nemotron-3-nano-30b-a3b-bf16/transformers/default, lora_r <= 32, answers use \boxed{} format, SFTExample schema is frozen in src/contracts.py:97.
+
+## Project Context Files
+### From CLAUDE.md:
+# CLAUDE.md (Router)
+
+Route your task to the right docs. Keep context minimal — open only what your task needs.
+
+| Task | Go to |
+|------|-------|
+| Competition rules, dataset, scoring | `docs/architecture/COMPETITION.md` |
+| System / model design | `docs/architecture/ARCHITECTURE.md` |
+| Execution plan (source of truth) | `docs/planning/plan_v0.2.md` |
+| Sprint / issue tracking | `docs/execution/SPRINTS.md` |
+| Notebook registry & status | `docs/execution/NOTEBOOKS.md` |
+| Current repo state | `docs/learn/project/implemented-today.md` |
+| Analysis & adversarial review | `docs/analysis/` |
+| All docs index | `docs/README.md` |
+
+## Working rules
+
+- Reusable code → `src/`; keep notebooks thin.
+- Large artifacts (`data/`, `adapters/`, `experiments/`) stay out of git.
+- Every notebook must have a row in `docs/execution/NOTEBOOKS.md`.
+
+
+
+## Instructions
+1. Focus ONLY on implementing this specific feature
+2. Make small, incremental changes
+3. Test your changes as you go
+4. When you are DONE:
+   - Commit your changes following conventional commit format:
+     * Use: feat(scope), fix(scope), docs(scope), refactor(scope), test(scope)
+     * Example: "feat(auth): add user authentication system"
+     * Add footer: "🤖 Committed by claude-swarm worker feature-3"
+   - Run the following verification commands and ensure they pass:
+     * `pytest tests/data/test_synthetic.py tests/data/test_gan_refine.py -v --tb=short`
+     * `pytest tests/ -v --tb=short --ignore=tests/data/test_synthetic.py --ignore=tests/data/test_gan_refine.py -q`
+     * If any verification command fails, fix the issue before proceeding
+   - Create a file at: .claude/orchestrator/workers/feature-3.done
+     with a brief summary of what you implemented
+
+## Important
+- Do not work on other features
+- If you encounter a blocker, document it in the .done file and stop
+- Keep changes minimal and focused
+- Always commit using conventional commit format with the worker attribution footer
+- The .claude/ directory is already gitignored - don't worry about it
+
+## Commit Format Example
+```bash
+# Add only the specific files you changed for this feature
+git add src/path/to/file1.ts src/path/to/file2.ts
+
+# Commit with subject and attribution footer
+git commit -m "feat(feature-name): implement the feature" -m "🤖 Committed by claude-swarm worker feature-3"
+```
+
+
+## Additional Context
+Create 3 new YAML files. First read docs/architecture/COMPETITION.md and docs/execution/plans/issue-25-hpc-queue-runbook.md to verify the frozen constraints before writing anything. The target modules from the runbook are in_proj|out_proj|up_proj|down_proj. Write configs/lora_baseline.yaml, configs/lora_qlora.yaml, and configs/smoke_sft.yaml exactly as specified in the plan. No existing configs to conflict with (the configs/ dir only has gan_config.yaml, solver_routing.yaml, synthetic_prompts.yaml).
+
+Begin implementing the feature now.

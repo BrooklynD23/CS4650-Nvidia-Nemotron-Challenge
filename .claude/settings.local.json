@@ -45,7 +45,14 @@
       "Bash(pip3 show *)",
       "Bash(grep -E \"\\\\.md$|\\\\.json$|\\\\.yaml$|\\\\.yml$\")",
       "Bash(grep -E \"\\\\.md$|\\\\.ipynb$\")",
-      "Bash(/home/brooklynd23/.local/bin/python -m pytest tests/evaluation/ -x --tb=short -q)"
+      "Bash(/home/brooklynd23/.local/bin/python -m pytest tests/evaluation/ -x --tb=short -q)",
+      "Bash(xargs -I{} cat \"{}\")",
+      "mcp__claude-swarm__set_dependencies",
+      "mcp__claude-swarm__configure_verification",
+      "mcp__claude-swarm__start_parallel_workers",
+      "mcp__claude-swarm__check_all_workers",
+      "mcp__claude-swarm__commit_progress",
+      "mcp__claude-swarm__check_worker"
     ]
   }
 }

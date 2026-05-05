@@ -1,0 +1,27 @@
+## Feature 5: Complete notebooks/08_synthetic_data_recipe.ipynb
+
+### What was implemented
+
+- **Cell [7] (task-list)**: Added `os.environ.get("LLM_API_KEY")` guard at end of cell.
+  - Key present → `llm_teacher_fn` set to `_real_teacher` (raises NotImplementedError as placeholder for wiring)
+  - Key absent → stub lambda returning `\boxed{STUB}`
+
+- **Cell [8] (c965c28b)**: Appended `config.llm_teacher_fn = llm_teacher_fn` to attach the teacher function resolved in Cell [7].
+
+- **Cell [9] (1a38a7db)**: Replaced dry-run scaffold with actual smoke generation loop.
+  - Calls `generate_from_retry_candidates(candidates, config, smoke=True)`
+  - Writes JSONL batch via `write_sft_examples_jsonl`; stores `output_path` as stem (without extension) so `output_path + '.sha256'` resolves correctly in Cell [10]
+  - Tracks `rejected_count = candidates_taken - len(smoke_results)`
+
+- **Cell [10] (83d6b2c0)**: Fingerprint verification.
+  - Reads `Path(output_path + ".sha256").read_text()` per spec
+  - Graceful no-op when `output_path is None`
+
+- **Cell [11] (605b835a)**: Summary table with rows: candidates fed / rows generated / rows rejected / cost estimate (USD) / SHA-256 fingerprint (first 24 chars).
+
+- All code cell outputs stripped (`outputs=[]`, `execution_count=null`) per repo convention.
+
+### Verification
+- `pytest tests/data/test_synthetic.py tests/data/test_gan_refine.py`: 24/24 passed
+- `pytest tests/ --ignore=...`: 224 passed, 1 skipped
+- Commit: 5045492

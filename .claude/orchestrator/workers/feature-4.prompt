@@ -1,0 +1,70 @@
+You are a worker agent focused on implementing a single feature.
+
+## Your Task
+T2-B: Implement src/training/sft_trainer.py (new file, ~80 lines) with function apply_loss_mask(input_ids: list[int], labels: list[int], tokenizer, mask_role: str = 'user') -> list[int] that sets prompt/user/system turn token labels to -100 and leaves assistant turn labels unchanged. Must use type annotations, handle edge case where no assistant turn exists (raise ValueError). Also create src/training/__init__.py. Then create tests/training/__init__.py and tests/training/test_masking.py with 4 tests: test_user_tokens_masked (all user turn tokens have label -100), test_assistant_tokens_unmasked (assistant labels equal input_ids), test_system_tokens_masked (system tokens get -100), test_all_masked_raises (ValueError when no assistant turn). Use a minimal mock tokenizer that returns predictable token boundaries.
+
+## Orchestration Context
+Close the remaining implementation gaps identified in issues #10/#24 (synthetic data) and #11/#25 (SFT training pipeline) so the project can start fine-tuning. The approved plan is at /home/danny/.claude/plans/elegant-floating-russell.md. Key constraint: base model is metric/nemotron-3-nano-30b-a3b-bf16/transformers/default, lora_r <= 32, answers use \boxed{} format, SFTExample schema is frozen in src/contracts.py:97.
+
+## Project Context Files
+### From CLAUDE.md:
+# CLAUDE.md (Router)
+
+Route your task to the right docs. Keep context minimal — open only what your task needs.
+
+| Task | Go to |
+|------|-------|
+| Competition rules, dataset, scoring | `docs/architecture/COMPETITION.md` |
+| System / model design | `docs/architecture/ARCHITECTURE.md` |
+| Execution plan (source of truth) | `docs/planning/plan_v0.2.md` |
+| Sprint / issue tracking | `docs/execution/SPRINTS.md` |
+| Notebook registry & status | `docs/execution/NOTEBOOKS.md` |
+| Current repo state | `docs/learn/project/implemented-today.md` |
+| Analysis & adversarial review | `docs/analysis/` |
+| All docs index | `docs/README.md` |
+
+## Working rules
+
+- Reusable code → `src/`; keep notebooks thin.
+- Large artifacts (`data/`, `adapters/`, `experiments/`) stay out of git.
+- Every notebook must have a row in `docs/execution/NOTEBOOKS.md`.
+
+
+
+## Instructions
+1. Focus ONLY on implementing this specific feature
+2. Make small, incremental changes
+3. Test your changes as you go
+4. When you are DONE:
+   - Commit your changes following conventional commit format:
+     * Use: feat(scope), fix(scope), docs(scope), refactor(scope), test(scope)
+     * Example: "feat(auth): add user authentication system"
+     * Add footer: "🤖 Committed by claude-swarm worker feature-4"
+   - Run the following verification commands and ensure they pass:
+     * `pytest tests/data/test_synthetic.py tests/data/test_gan_refine.py -v --tb=short`
+     * `pytest tests/ -v --tb=short --ignore=tests/data/test_synthetic.py --ignore=tests/data/test_gan_refine.py -q`
+     * If any verification command fails, fix the issue before proceeding
+   - Create a file at: .claude/orchestrator/workers/feature-4.done
+     with a brief summary of what you implemented
+
+## Important
+- Do not work on other features
+- If you encounter a blocker, document it in the .done file and stop
+- Keep changes minimal and focused
+- Always commit using conventional commit format with the worker attribution footer
+- The .claude/ directory is already gitignored - don't worry about it
+
+## Commit Format Example
+```bash
+# Add only the specific files you changed for this feature
+git add src/path/to/file1.ts src/path/to/file2.ts
+
+# Commit with subject and attribution footer
+git commit -m "feat(feature-name): implement the feature" -m "🤖 Committed by claude-swarm worker feature-4"
+```
+
+
+## Additional Context
+Create src/training/__init__.py (empty), src/training/sft_trainer.py (~80 lines), tests/training/__init__.py (empty), and tests/training/test_masking.py. The apply_loss_mask function takes input_ids and labels lists plus a tokenizer object. For token boundary detection: the function should work with a simple approach — find positions of role separator tokens (e.g. system/user/assistant markers) in input_ids. Since we do not have a real tokenizer at test time, design it so the tokenizer object just needs an encode() method and a chat_template_roles property or similar minimal interface. Use a mock tokenizer in tests that gives predictable turn boundaries. Run pytest tests/training/test_masking.py after creating.
+
+Begin implementing the feature now.

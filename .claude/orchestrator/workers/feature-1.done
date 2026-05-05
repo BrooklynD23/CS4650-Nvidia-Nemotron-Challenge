@@ -1,0 +1,32 @@
+## Feature T1-AB: Completed
+
+### What was implemented
+
+1. `import yaml` added to `src/data/synthetic.py` (PyYAML 6.0.1 confirmed available).
+
+2. `SyntheticConfig` dataclass gained two new optional fields:
+   - `prompt_config_path: Path | None = None` — path to configs/synthetic_prompts.yaml
+   - `solver_confidence_threshold: float = 0.0` — 0.0 disables the gate
+
+3. `_load_prompt_templates(config)` helper added — loads `templates` dict from YAML via `yaml.safe_load` when `prompt_config_path` is set.
+
+4. `generate_from_retry_candidates()` updated:
+   - Accepts optional `prompt_templates` parameter (loaded from YAML if not provided)
+   - Dry-run token estimates now use per-category `dry_run_token_estimate` from YAML, falling back to `len(gold)//4+200`
+   - LLM teacher prompt built from `template['system'] + problem_formulation` per category
+
+5. `QualityFilter.accept()` — solver_confidence gate added after provenance check:
+   - Only active when `solver_confidence_threshold > 0`
+   - Reads `ex.provenance.get('solver_confidence', 0.0)` and rejects if below threshold
+
+6. Tests added to `tests/data/test_synthetic.py`:
+   - `test_solver_confidence_threshold_rejects_low_confidence`
+   - `test_solver_confidence_threshold_accepts_high_confidence`
+   - `test_solver_confidence_threshold_disabled_by_default`
+
+### Verification
+- `pytest tests/data/test_synthetic.py tests/data/test_gan_refine.py`: 24/24 passed
+- `pytest tests/ --ignore=...`: 220 passed, 1 skipped
+
+### Commit
+`66d1602` feat(synthetic): integrate prompt YAML config and solver-confidence gate
