@@ -21,6 +21,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
+import yaml
+
 from src.contracts import SFTExample
 from src.evaluation.trajectory import TrajectoryRow
 
@@ -44,6 +46,8 @@ class SyntheticConfig:
     max_tokens: int = _MAX_TOKENS
     verifier: Any = None  # Verifier Protocol instance (optional)
     llm_teacher_fn: Callable[[str], str] | None = None  # mock-able LLM call
+    prompt_config_path: Path | None = None  # path to synthetic_prompts.yaml
+    solver_confidence_threshold: float = 0.0  # 0.0 = disabled
 
 
 # ---------------------------------------------------------------------------
@@ -90,6 +94,10 @@ class QualityFilter:
             return False
         if not self._category_ok(ex):
             return False
+        if self._config.solver_confidence_threshold > 0:
+            conf = ex.provenance.get("solver_confidence", 0.0)
+            if conf < self._config.solver_confidence_threshold:
+                return False
         self._seen.add(fp)
         return True
 
@@ -135,12 +143,22 @@ def _row_to_sft_example(
     )
 
 
+def _load_prompt_templates(config: SyntheticConfig) -> dict[str, Any]:
+    """Load prompt templates from YAML if prompt_config_path is set."""
+    if config.prompt_config_path is None:
+        return {}
+    with open(config.prompt_config_path, encoding="utf-8") as fh:
+        data = yaml.safe_load(fh)
+    return data.get("templates", {})
+
+
 def generate_from_retry_candidates(
     candidates: list[TrajectoryRow],
     config: SyntheticConfig,
     *,
     smoke: bool = False,
     dry_run: bool = False,
+    prompt_templates: dict[str, Any] | None = None,
 ) -> list[SFTExample]:
     """Generate SFTExamples from retry-candidate trajectory rows.
 
@@ -153,16 +171,21 @@ def generate_from_retry_candidates(
         config: Generation configuration including cost cap and output dir.
         smoke: If True, cap output at SMOKE_LIMIT (50) examples.
         dry_run: If True, print token/cost estimate and return empty list.
+        prompt_templates: Optional override; if None, loaded from config.prompt_config_path.
 
     Returns:
         Filtered SFTExample list; writes JSONL + SHA-256 fingerprint to config.output_dir.
     """
+    if prompt_templates is None:
+        prompt_templates = _load_prompt_templates(config)
+
     target = candidates[:_SMOKE_LIMIT] if smoke else candidates
 
     if dry_run:
-        est_tokens = sum(
-            len(row.record.gold) // 4 + 200 for row in target
-        )
+        est_tokens = 0
+        for row in target:
+            tmpl = prompt_templates.get(row.record.category, {})
+            est_tokens += tmpl.get("dry_run_token_estimate", len(row.record.gold) // 4 + 200)
         est_cost = est_tokens * 0.000002  # rough estimate
         print(f"[dry-run] examples to generate: {len(target)}")
         print(f"[dry-run] estimated tokens: {est_tokens}")
@@ -182,6 +205,16 @@ def generate_from_retry_candidates(
         completion: str | None = None
         teacher_used = "none"
 
+        # Build LLM prompt using category template when available
+        tmpl = prompt_templates.get(row.record.category, {})
+        system_prompt = tmpl.get("system", "")
+        problem_formulation = tmpl.get("problem_formulation", "{problem}").format(
+            problem=row.record.gold,
+            examples=row.record.gold,
+            query=row.record.gold,
+        )
+        llm_prompt = (system_prompt + "\n\n" + problem_formulation).strip() if system_prompt else problem_formulation
+
         # Teacher policy: verifier-first
         if config.verifier is not None:
             # If the record already has a recoverable answer, verify it
@@ -197,7 +230,7 @@ def generate_from_retry_candidates(
         # LLM teacher fallback
         if completion is None and config.llm_teacher_fn is not None:
             try:
-                completion = config.llm_teacher_fn(row.record.gold)
+                completion = config.llm_teacher_fn(llm_prompt)
                 teacher_used = "llm_teacher"
                 accumulated_cost += 0.01  # placeholder cost per call
             except Exception:

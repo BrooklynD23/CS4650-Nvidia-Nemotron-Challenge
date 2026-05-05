@@ -252,3 +252,51 @@ def test_creates_parent_directories(tmp_path):
     out = tmp_path / "deep" / "nested" / "batch.jsonl"
     write_sft_examples_jsonl(examples, out)
     assert out.exists()
+
+
+# ---------------------------------------------------------------------------
+# solver_confidence_threshold tests
+# ---------------------------------------------------------------------------
+
+def test_solver_confidence_threshold_rejects_low_confidence(tmp_path):
+    config = SyntheticConfig(
+        output_dir=tmp_path / "synthetic",
+        categories=["math"],
+        solver_confidence_threshold=0.9,
+    )
+    filt = QualityFilter(config)
+    ex_low = _make_sft_example(
+        provenance={
+            "teacher": "verifier",
+            "generated_at": "2026-05-05T00:00:00Z",
+            "source_run_id": "run-test",
+            "solver_confidence": 0.5,
+        }
+    )
+    assert filt.accept(ex_low) is False
+
+
+def test_solver_confidence_threshold_accepts_high_confidence(tmp_path):
+    config = SyntheticConfig(
+        output_dir=tmp_path / "synthetic",
+        categories=["math"],
+        solver_confidence_threshold=0.9,
+    )
+    filt = QualityFilter(config)
+    ex_high = _make_sft_example(
+        example_id="ex_high",
+        provenance={
+            "teacher": "verifier",
+            "generated_at": "2026-05-05T00:00:00Z",
+            "source_run_id": "run-test",
+            "solver_confidence": 0.95,
+        }
+    )
+    assert filt.accept(ex_high) is True
+
+
+def test_solver_confidence_threshold_disabled_by_default(tmp_path):
+    config = _make_config(tmp_path)  # solver_confidence_threshold defaults to 0.0
+    filt = QualityFilter(config)
+    ex = _make_sft_example(example_id="ex_no_conf")
+    assert filt.accept(ex) is True
