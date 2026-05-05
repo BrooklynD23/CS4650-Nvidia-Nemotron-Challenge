@@ -11,6 +11,8 @@ Product and technical constraints for building, training, and submitting.
 - `ARCHITECTURE.md`: End-to-end system design from data to submission artifact.
 - `COMPETITION.md`: Competition rules/constraints snapshot and open verification items.
 - `CONCEPTS_EXPLAINED_NON_TECHNICAL.md`: legacy pointer to the canonical beginner docs in `docs/learn/`.
+- `SOLVER_DESIGN.md`: Category-aware solver plugin framework and routing config.
+- `SYNTHETIC_PROVENANCE.md`: Artifact layout, provenance schema, fingerprint algorithm, and re-verification steps for synthetic training data.
 
 ## When To Use
 
