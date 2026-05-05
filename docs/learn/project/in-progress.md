@@ -3,7 +3,7 @@ title: What Is Still In Progress
 audience: beginner
 page_type: project-status
 status: in_progress
-last_reviewed: 2026-04-21
+last_reviewed: 2026-05-05
 repo_sources:
   - docs/execution/SPRINTS.md
   - docs/execution/NOTEBOOKS.md
@@ -24,15 +24,18 @@ finished, stable delivery.
 
 ## What Is In Progress
 
-The biggest unfinished work falls into three groups:
+The biggest unfinished work falls into two groups:
 
 - remaining external-source follow-up, especially source/license/provenance
   capture before any Tong or konbu17 idea becomes implementation work
-- future implementation waves that have plan docs or notebook scaffolds, but not
-  finished production code
 - the prompt/decode sweep workflow: the implementation is complete and tested,
   but actual execution is blocked because the required dataset split artifacts
   have not yet been produced by the earlier pipeline step (issue #18)
+
+Note: Synthetic data generation (notebook 08, issue #24) and SFT training
+infrastructure (notebook 09, issue #25) now have finished implementation code in
+the repo (`src/data/synthetic.py`, `src/training/sft_trainer.py`, and
+`scripts/hpc/` runbooks). These are no longer purely planned work.
 
 ## Current Repo Evidence
 
@@ -43,7 +46,8 @@ The biggest unfinished work falls into three groups:
   depends on the Wave B foundation.
 - `docs/execution/NOTEBOOKS.md` marks notebook 05 (`05_prompting_and_decode_sweeps.ipynb`)
   as `active`, meaning the code is real and importable, but the notebook has
-  not been executed end-to-end yet. Several later notebooks remain `scaffolded`.
+  not been executed end-to-end yet. Notebooks 08 and 09 now have real
+  implementations (see `implemented-today.md`).
 - `docs/analysis/prompting_findings.md` records the current blocked state
   explicitly: the notebook requires `data/eval/validation_200.jsonl` and
   `data/eval/golden_20.jsonl` from issue #18, which are not yet committed to the
@@ -53,8 +57,9 @@ The biggest unfinished work falls into three groups:
   still gated on source availability, license/provenance capture, and PM signoff
   for deviations from the verified `#14` contract.
 - `docs/execution/plans/issue-25-hpc-queue-runbook.md` exists as a planning
-  artifact, but the corresponding training work is still gated on earlier
-  phases.
+  artifact. The corresponding training infrastructure work is now implemented:
+  see `src/training/sft_trainer.py`, training configs, and `scripts/hpc/` scripts
+  in `implemented-today.md`.
 
 ## What This Means For Readers
 

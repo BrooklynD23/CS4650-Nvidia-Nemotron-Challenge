@@ -3,7 +3,7 @@ title: What Is Planned Next
 audience: beginner
 page_type: roadmap
 status: planned
-last_reviewed: 2026-04-21
+last_reviewed: 2026-05-05
 repo_sources:
   - docs/execution/SPRINTS.md
   - docs/planning/plan_v0.2.md
@@ -25,15 +25,19 @@ The next major steps in the repo’s roadmap are:
 
 - failure-slice and trajectory collection (notebook 06, scaffolded)
 - solver-framework design (notebook 07, scaffolded)
-- synthetic-data design (notebook 08, scaffolded)
-- SFT and masking runbooks for training (notebook 09, scaffolded), using
-  `r<=32`, explicit completion-only masking, and the verified `#14` base
-  model/package contract
 
-Note: prompt and decode experiments are no longer purely planned. The
-implementation in `src/evaluation/prompt_sweeps.py` and notebook 05 exist and
-are tested. Execution is blocked only on split artifact availability from issue
-#18. See the In Progress page for the current status.
+Note: Several previous planned items are now implemented in the repo:
+- Synthetic-data design (notebook 08, issue #24): Implementation is complete with
+  `src/data/synthetic.py`, fully executable notebook, and provenance documentation.
+  See `implemented-today.md` for details.
+- SFT and masking runbooks for training (notebook 09, issue #25): Implementation
+  is complete with `src/training/sft_trainer.py`, training configs, and HPC
+  submission scripts in `scripts/hpc/`. Uses `r<=32`, explicit completion-only
+  masking, and verified `#14` base model/package contract.
+- Prompt and decode experiments: The implementation in `src/evaluation/prompt_sweeps.py`
+  and notebook 05 exist and are tested. Execution is blocked only on split
+  artifact availability from issue #18. See the In Progress page for the current
+  status.
 
 These remaining items are meaningful next steps, but they should be described as
 planned work until the repo contains finished deliverables and validation for
