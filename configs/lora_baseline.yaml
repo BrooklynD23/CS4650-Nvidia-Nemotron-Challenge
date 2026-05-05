@@ -1,0 +1,14 @@
+base_model: metric/nemotron-3-nano-30b-a3b-bf16/transformers/default
+
+lora_r: 32
+lora_alpha: 64
+lora_dropout: 0.05
+target_modules:
+  - in_proj
+  - out_proj
+  - up_proj
+  - down_proj
+
+load_in_4bit: false
+torch_dtype: bfloat16
+trust_remote_code: true
