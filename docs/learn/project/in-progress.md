@@ -26,8 +26,8 @@ finished, stable delivery.
 
 The biggest unfinished work falls into three groups:
 
-- external facts that still need confirmation, especially around competition
-  constraints and exact model assumptions
+- remaining external-source follow-up, especially source/license/provenance
+  capture before any Tong or konbu17 idea becomes implementation work
 - future implementation waves that have plan docs or notebook scaffolds, but not
   finished production code
 - the prompt/decode sweep workflow: the implementation is complete and tested,
@@ -36,8 +36,9 @@ The biggest unfinished work falls into three groups:
 
 ## Current Repo Evidence
 
-- `docs/architecture/COMPETITION.md` still marks some competition facts as open
-  questions or assumptions rather than fully frozen truths.
+- `docs/architecture/COMPETITION.md` now captures the verified `#14` contract
+  for the base model path, boxed-answer scoring, rank cap, and root zip layout;
+  a few evaluator-internal details remain intentionally unconfirmed.
 - `docs/execution/SPRINTS.md` shows Waves C and D as downstream work that
   depends on the Wave B foundation.
 - `docs/execution/NOTEBOOKS.md` marks notebook 05 (`05_prompting_and_decode_sweeps.ipynb`)
@@ -47,6 +48,10 @@ The biggest unfinished work falls into three groups:
   explicitly: the notebook requires `data/eval/validation_200.jsonl` and
   `data/eval/golden_20.jsonl` from issue #18, which are not yet committed to the
   repo. Execution will produce ranked sweep results once those files exist.
+- `docs/analysis/EXTERNAL_BASELINE_REVIEW.md` records the completed bounded
+  Tong (`tonghuikang`) + konbu17 baseline review. Follow-up reproduction work is
+  still gated on source availability, license/provenance capture, and PM signoff
+  for deviations from the verified `#14` contract.
 - `docs/execution/plans/issue-25-hpc-queue-runbook.md` exists as a planning
   artifact, but the corresponding training work is still gated on earlier
   phases.
@@ -64,4 +69,5 @@ training execution should be described as completed work.
 - Repo: [docs/architecture/COMPETITION.md](../../architecture/COMPETITION.md)
 - Repo: [docs/execution/plans/issue-25-hpc-queue-runbook.md](../../execution/plans/issue-25-hpc-queue-runbook.md)
 - Repo: [docs/analysis/prompting_findings.md](../../analysis/prompting_findings.md)
+- Repo: [docs/analysis/EXTERNAL_BASELINE_REVIEW.md](../../analysis/EXTERNAL_BASELINE_REVIEW.md)
 - Repo: [src/evaluation/prompt_sweeps.py](../../../src/evaluation/prompt_sweeps.py)

@@ -7,6 +7,8 @@ last_reviewed: 2026-04-29
 repo_sources:
   - docs/architecture/COMPETITION.md
   - docs/execution/SPRINTS.md
+  - src/inference/submission.py
+  - scripts/package_submission.py
 external_sources:
   - https://www.kaggle.com/competitions/nvidia-nemotron-model-reasoning-challenge
   - https://www.kaggle.com/code/ryanholbrook/nvidia-nemotron-submission-demo
@@ -39,6 +41,14 @@ rule-induction and pattern solving than to ordinary chat or essay writing.
 This is not just a "get better answers" problem. The team also has to produce a
 submission artifact that Kaggle can load. That is why the repo has a separate
 packaging and provenance phase instead of treating evaluation as the final step.
+
+In this repo, that packaging contract is implemented in
+`src/inference/submission.py` (Python API) with a CLI wrapper in
+`scripts/package_submission.py`. The Kaggle-facing `submission.zip` is kept
+intentionally minimal (it contains **only** `adapter_config.json` and
+`adapter_model.safetensors` at the zip root). All provenance metadata is written
+to `submission.manifest.json` beside the zip (typically under
+`experiments/submissions/<run_id>/`).
 
 ## Why The Repo Treats Some Competition Facts Carefully
 

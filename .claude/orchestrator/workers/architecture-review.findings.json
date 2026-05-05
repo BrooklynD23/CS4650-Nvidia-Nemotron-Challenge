@@ -1,0 +1,55 @@
+{
+  "summary": "The notebook implementation of `04_baseline_eval_and_normalization.ipynb` is architecturally sound and well-aligned with the existing `src/evaluation/` infrastructure. The notebook correctly orchestrates the defined pipeline (ingest → predict → normalize → score → report) by delegating every domain concern to the appropriate `src/evaluation/` module rather than reimplementing logic inline. The predictor abstraction (`Predictor = Callable[[PredictRequest], PredictResponse]`) is correctly honoured: the stub predictor conforms to the contract, making real-model substitution a drop-in. Immutable frozen dataclasses are used consistently throughout both the library and the notebook, matching project coding standards. The synthetic fallback pattern for missing split artifacts is a valid provisional technique that prevents the notebook from becoming a hard dependency on unreleased data. One moderate concern is a subtle duplication of JSONL read/write logic between `src/evaluation/records.py` and `src/evaluation/reporting.py` — both expose equivalent `write_eval_records_jsonl`/`read_eval_records_jsonl` implementations. This pre-exists the notebook but is surfaced by its imports. Additional minor concerns include the inline golden-set definition coupling the notebook to specific category strings, the global mutable `_GOLD_MAP` that the stub predictor depends on, and the absence of notebook-level test execution that verifies the assertion cells actually run.",
+  "severity": "minor",
+  "issues": [
+    {
+      "category": "abstraction",
+      "severity": "warning",
+      "file": "src/evaluation/records.py",
+      "message": "Duplicate JSONL read/write logic: `src/evaluation/records.py` and `src/evaluation/reporting.py` both define `write_eval_records_jsonl` and `read_eval_records_jsonl` with nearly identical implementations. The `reporting.py` docstring acknowledges this ('Deliberately mirrors ...') but the duplication means two code paths to maintain, with divergence risk.",
+      "suggestion": "Consolidate the canonical JSONL serialization into one location (either `records.py` or `reporting.py`), and have the other module re-export or delegate. This is a pre-existing issue but notebook cell 25 imports only from `reporting.py`, so that module should own the canonical implementation."
+    },
+    {
+      "category": "coupling",
+      "severity": "warning",
+      "file": "notebooks/04_baseline_eval_and_normalization.ipynb",
+      "message": "The notebook embeds inline synthetic golden rows keyed to specific competition category strings (`bit_manipulation`, `unit_conversion`, `text_cipher`, etc.). If the canonical category taxonomy in `src/contracts.py` or the competition rules changes, this hardcoded list will silently diverge from the real data without any contract check.",
+      "suggestion": "Consider deriving synthetic examples from a shared constants module or config file, or at minimum adding an assertion that every synthetic row's `category` is a member of a defined allowed-categories set sourced from the contracts layer."
+    },
+    {
+      "category": "complexity",
+      "severity": "warning",
+      "file": "notebooks/04_baseline_eval_and_normalization.ipynb",
+      "message": "The stub predictor relies on a module-level mutable dict `_GOLD_MAP` built from `val_rows + golden_rows` at cell-definition time (cell 14). Because Jupyter cells execute imperatively, this creates an implicit ordering dependency: cell 14 must run after cells 11 and 12, but the dict is constructed at capture time without explicit parameter passing. If cells are re-run out of order, `_GOLD_MAP` may be stale.",
+      "suggestion": "Pass `gold_map` as an explicit parameter to the stub predictor factory rather than capturing it from module-level state. A `make_stub_predictor(gold_map)` factory pattern would make the dependency explicit and safe to re-run."
+    },
+    {
+      "category": "consistency",
+      "severity": "info",
+      "file": "notebooks/04_baseline_eval_and_normalization.ipynb",
+      "message": "The round-trip validation assertions in cell 25 only spot-check the first 3 records (`reloaded_records[:3]`). For a notebook that documents the artifact contract, full-population assertion would be more consistent with the 'fail closed' validation philosophy applied throughout `src/evaluation/`.",
+      "suggestion": "Replace the `[:3]` slice with a full-population assertion loop, or at minimum add an assertion that all records carry the same attribution fields rather than sampling only the first three."
+    },
+    {
+      "category": "scalability",
+      "severity": "info",
+      "file": "notebooks/04_baseline_eval_and_normalization.ipynb",
+      "message": "The val and golden split rows are loaded entirely into memory as Python lists before the pipeline runs. This is appropriate for the current synthetic scale (19 val rows, 7 golden rows), but should be acknowledged as a provisional design choice.",
+      "suggestion": "Document in the 'Provisional Assumptions' table that in-memory loading is intentional for the stub/synthetic phase, and flag it as a scaling assumption to revisit when real split artifacts are produced at competition size."
+    },
+    {
+      "category": "pattern",
+      "severity": "info",
+      "file": "notebooks/04_baseline_eval_and_normalization.ipynb",
+      "message": "The `REPO_ROOT` detection logic (walking parent directories looking for `src/` + `notebooks/`) is duplicated across multiple notebooks. If a notebook is moved or run from an unexpected working directory, the heuristic could silently pick the wrong root.",
+      "suggestion": "Extract repo-root resolution into a shared `src/tooling/notebook_env.py` utility so all notebooks use a single, tested implementation rather than each carrying their own copy."
+    }
+  ],
+  "recommendations": [
+    "Consolidate the duplicated `write_eval_records_jsonl`/`read_eval_records_jsonl` logic between `src/evaluation/records.py` and `src/evaluation/reporting.py` before the eval infrastructure is used in CI pipelines — two diverging implementations risk subtle scoring inconsistencies.",
+    "Replace the module-level `_GOLD_MAP` in the stub predictor with an explicit factory function (`make_stub_predictor(gold_map)`) to eliminate the implicit cell-ordering dependency and make the notebook safe to re-execute non-linearly.",
+    "Scope the inline synthetic category strings to a defined constant or config so that a competition taxonomy change does not silently break the notebook's synthetic fallback without a contract-level error.",
+    "Extend the round-trip validation assertions (cell 25) to cover all records rather than just the first three, to stay consistent with the 'fail closed' validation philosophy in the `src/evaluation/` layer.",
+    "Extract common notebook bootstrapping code (repo-root detection, sys.path setup) into a shared `src/tooling/notebook_env.py` module to reduce duplication across all numbered notebooks."
+  ]
+}

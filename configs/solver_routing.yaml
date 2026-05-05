@@ -1,0 +1,9 @@
+categories:
+  bit_manipulation:
+    solver_class: "src.solvers.bit_manipulation.BitManipulationSolver"
+    confidence_threshold: 0.7
+  default:
+    solver_class: null
+    confidence_threshold: 0.3
+
+llm_fallback_model: "deepseek-r1"

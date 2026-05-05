@@ -1,0 +1,60 @@
+{
+  "projectDir": "/mnt/c/Users/Danny/Documents/Github/CS4650-Nvidia-Nemotron-Challenge",
+  "taskDescription": "Implement notebooks/04_baseline_eval_and_normalization.ipynb for issue #19. The notebook must define the ingest→predict→normalize→score→report pipeline, document the normalization contract, produce record-level EvalRecord artifacts, report overall and per-category accuracy, include failure/drift analysis, and run a golden regression gate. All evaluation infrastructure already exists in src/evaluation/. The notebook replaces an existing scaffold with a full working implementation.",
+  "features": [
+    {
+      "id": "feature-1",
+      "description": "Implement notebooks/04_baseline_eval_and_normalization.ipynb: replace scaffold with full pipeline — contract docs, run config, synthetic ingest (with file fallback), stub predictor, val+golden eval runs, failure analysis, normalizer drift, golden gate, artifact round-trip validation, provisional assumptions",
+      "status": "completed",
+      "attempts": 0,
+      "complexity": {
+        "score": 20,
+        "isComplex": false,
+        "signals": {
+          "descriptionLength": 308,
+          "keywordMatches": [],
+          "scopeIndicators": [],
+          "architecturalTerms": [],
+          "uncertaintyIndicators": [],
+          "dependencyCount": 0,
+          "estimatedTouchPoints": 0
+        },
+        "recommendation": "simple",
+        "breakdown": {
+          "lengthScore": 20,
+          "keywordScore": 0,
+          "scopeScore": 0,
+          "dependencyScore": 0,
+          "touchPointScore": 0
+        }
+      },
+      "completedAt": "2026-04-21T17:41:43.625Z"
+    }
+  ],
+  "workers": [],
+  "status": "reviewing",
+  "startTime": "2026-04-21T17:25:06.461Z",
+  "lastUpdated": "2026-04-21T17:41:43.861Z",
+  "progressLog": [
+    "[2026-04-21T17:25:06.461Z] Orchestration initialized with 1 features",
+    "[2026-04-21T17:41:43.670Z] ✅ Completed: feature-1 - Implement notebooks/04_baseline_eval_and_normalization.ipynb: replace scaffold with full pipeline — contract docs, run config, synthetic ingest (with file fallback), stub predictor, val+golden eval runs, failure analysis, normalizer drift, golden gate, artifact round-trip validation, provisional assumptions",
+    "[2026-04-21T17:41:43.670Z] 🔍 All features done. Starting automated reviews...",
+    "[2026-04-21T17:41:43.861Z] 🔍 Started 2 review worker(s)"
+  ],
+  "reviewWorkers": [
+    {
+      "type": "code",
+      "workerId": "cc-reviewer-code-mo8wuvft",
+      "sessionName": "cc-reviewer-code-mo8wuvft",
+      "status": "running",
+      "startedAt": "2026-04-21T17:41:43.841Z"
+    },
+    {
+      "type": "architecture",
+      "workerId": "cc-reviewer-architecture-mo8wuvj5",
+      "sessionName": "cc-reviewer-architecture-mo8wuvj5",
+      "status": "running",
+      "startedAt": "2026-04-21T17:41:43.861Z"
+    }
+  ]
+}

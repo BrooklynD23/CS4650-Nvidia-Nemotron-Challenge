@@ -26,7 +26,9 @@ The next major steps in the repo’s roadmap are:
 - failure-slice and trajectory collection (notebook 06, scaffolded)
 - solver-framework design (notebook 07, scaffolded)
 - synthetic-data design (notebook 08, scaffolded)
-- SFT and masking runbooks for training (notebook 09, scaffolded)
+- SFT and masking runbooks for training (notebook 09, scaffolded), using
+  `r<=32`, explicit completion-only masking, and the verified `#14` base
+  model/package contract
 
 Note: prompt and decode experiments are no longer purely planned. The
 implementation in `src/evaluation/prompt_sweeps.py` and notebook 05 exist and
@@ -36,6 +38,10 @@ are tested. Execution is blocked only on split artifact availability from issue
 These remaining items are meaningful next steps, but they should be described as
 planned work until the repo contains finished deliverables and validation for
 them.
+
+External baseline ideas from Tong (`tonghuikang`) and konbu17 are now reviewed,
+but implementation remains planned work unless the idea is validated locally and
+does not drift from the official Kaggle/NVIDIA contract.
 
 ## Current Repo Evidence
 

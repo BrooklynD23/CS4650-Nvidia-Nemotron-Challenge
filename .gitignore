@@ -39,6 +39,10 @@ checkpoints/
 outputs/
 runs/
 
+# Submission artifacts (keep out of git)
+experiments/submissions/**
+!experiments/submissions/README.md
+
 # OS / editor
 .DS_Store
 Thumbs.db
@@ -46,6 +50,30 @@ Thumbs.db
 
 # Local assistant/agent artifacts
 .codex
-.claude
+.claude/*.log
 claude-progress.txt
 init.sh
+
+# ── GSD baseline (auto-generated) ──
+.gsd
+.gsd-id
+.mcp.json
+.bg-shell/
+*.swp
+*.swo
+*~
+.idea/
+*.code-workspace
+.env.*
+!.env.example
+node_modules/
+.next/
+dist/
+build/
+*.pyc
+target/
+vendor/
+*.log
+coverage/
+.cache/
+tmp/

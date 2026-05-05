@@ -1,0 +1,13 @@
+{
+  "projectDir": "/mnt/c/Users/Danny/Documents/Github/CS4650-Nvidia-Nemotron-Challenge",
+  "taskDescription": "Implement notebooks/04_baseline_eval_and_normalization.ipynb for issue #19. The notebook must define the ingest→predict→normalize→score→report pipeline, document the normalization contract, produce record-level EvalRecord artifacts, report overall and per-category accuracy, include failure/drift analysis, and run a golden regression gate. All evaluation infrastructure already exists in src/evaluation/. The notebook replaces an existing scaffold with a full working implementation.",
+  "lastUpdated": "2026-04-21T17:41:43.861Z",
+  "features": [
+    {
+      "id": "feature-1",
+      "description": "Implement notebooks/04_baseline_eval_and_normalization.ipynb: replace scaffold with full pipeline — contract docs, run config, synthetic ingest (with file fallback), stub predictor, val+golden eval runs, failure analysis, normalizer drift, golden gate, artifact round-trip validation, provisional assumptions",
+      "status": "completed",
+      "passes": true
+    }
+  ]
+}

@@ -42,7 +42,9 @@ project architecture and Wave B plans separate evaluation into explicit steps:
 
 - Validation answers "Are we getting better overall?"
 - Golden tests answer "Did we accidentally break something we already solved?"
-- Packaging answers "Can Kaggle load what we built?"
+- Packaging answers "Can Kaggle load what we built?" (implemented in
+  `src/inference/submission.py`, with a CLI wrapper at
+  `scripts/package_submission.py`).
 
 That separation is one of the healthiest parts of the repo because it prevents
 the team from confusing "interesting experiments" with "submission-ready work."

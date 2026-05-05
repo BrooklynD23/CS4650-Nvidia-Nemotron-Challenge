@@ -32,15 +32,15 @@ Every local notebook must include the following sections inside the notebook:
 |---|---|---|---|
 | `notebooks/00_competition_constraints_and_rules.ipynb` | `#14` | Verify rules, model constraints, evaluation rules, and deadlines | validated |
 | `notebooks/01_external_baselines_and_design_deltas.ipynb` | `#16` | Compare Tong, `konbu17`, and current repo assumptions | validated |
-| `notebooks/02_dataset_schema_and_eda.ipynb` | `#17` | Explain dataset schema, category shape, and normalization plan | validated |
-| `notebooks/03_validation_and_golden_set.ipynb` | `#18` | Define validation split and golden-set regression policy | validated |
+| `notebooks/02_dataset_schema_and_eda.ipynb` | `#17` | Explain dataset schema, category shape, and normalization plan | scaffolded |
+| `notebooks/03_validation_and_golden_set.ipynb` | `#18` | Define validation split and golden-set regression policy | scaffolded |
 | `notebooks/04_baseline_eval_and_normalization.ipynb` | `#19` | Define exact-match eval records and normalization rules | active |
 | `notebooks/05_prompting_and_decode_sweeps.ipynb` | `#21` | Compare prompt templates and decode settings; writes ranked sweep CSV + findings doc | active |
-| `notebooks/06_trajectory_collection_and_error_slices.ipynb` | `#22` | Document failure slices and targeted follow-up loops | scaffolded |
-| `notebooks/07_solver_framework_design.ipynb` | `#23` | Specify the category-aware solver interface and fallback policy | scaffolded |
-| `notebooks/08_synthetic_data_recipe.ipynb` | `#24` | Specify teacher, filter, and provenance rules for synthetic data | scaffolded |
+| `notebooks/06_trajectory_collection_and_error_slices.ipynb` | `#22` | Classify EvalRecord failures into error types; produce retry-candidate set and error-slice taxonomy | active |
+| `notebooks/07_solver_framework_design.ipynb` | `#23` | Implement Solver/Verifier protocols, CategoryRouter, BitManipulationSolver; produce solver_routing.yaml and SOLVER_DESIGN.md | active |
+| `notebooks/08_synthetic_data_recipe.ipynb` | `#24` | Implement synthetic data pipeline with solver-first teacher policy, quality filters, cost cap, and SHA-256 fingerprinting | active |
 | `notebooks/09_sft_runbook_and_masking.ipynb` | `#25` | Specify LoRA/QLoRA runbook, masking, and checkpoint policy | scaffolded |
-| `notebooks/10_submission_packaging_and_provenance.ipynb` | `#20` | Specify packaging, dry-run validation, and provenance metadata | validated |
+| `notebooks/10_submission_packaging_and_provenance.ipynb` | `#20` | Document the implemented packager entrypoint + provenance policy | active |
 
 ## Cross-Notebook Architectural Decisions
 
@@ -50,10 +50,10 @@ Every local notebook must include the following sections inside the notebook:
   - Load recipe: `trust_remote_code=True`, `torch.bfloat16`, `device_map="auto"`
   - LoRA rank cap: `r ≤ 32` (evaluator enforces `max_lora_rank=32`)
   - Demo target modules: `in_proj|out_proj|up_proj|down_proj`
-  - Scoring: extract from `\\boxed{}`, exact match (or `1e-3` numeric tolerance); reasoning text outside the box is allowed and ignored
+  - Scoring: extract from `\boxed{}`, exact match (or `1e-3` numeric tolerance); reasoning text outside the box is allowed and ignored
   - Submission zip: `adapter_config.json` + `adapter_model.safetensors` at root
   - Evaluator decode: `max_tokens=7680`, `temperature=0.0`, `top_p=1.0`, `max_model_len=8192`
-- Notebooks must use `\\boxed{}` extraction for normalization and not assume plain raw-string answers.
+- Notebooks must use `\boxed{}` extraction for normalization and not assume plain raw-string answers.
 - Keep explanation and citations inside the notebook so non-technical reviewers can read one artifact end-to-end.
 
 ## External Reference Work
@@ -64,6 +64,8 @@ Every local notebook must include the following sections inside the notebook:
 | https://www.kaggle.com/code/konbu17/nemotron-tong-style-cot-sft-updated-v2 | Requested review target for reproduction and delta analysis |
 | https://www.kaggle.com/datasets/kishanvavdara/nemotron-reasoning-traj | Useful for failure-slice and trajectory analysis patterns |
 | https://aitherium.com/blog/nemotron-reasoning-challenge-mirothinker-distillation/ | Public distillation notes and design pitfalls |
+
+Current bounded review artifact: `docs/analysis/EXTERNAL_BASELINE_REVIEW.md`.
 
 ## Update Procedure
 

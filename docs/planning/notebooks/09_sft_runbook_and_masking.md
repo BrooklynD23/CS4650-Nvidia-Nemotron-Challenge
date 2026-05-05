@@ -11,7 +11,7 @@
 
 ## 1. Objective
 
-Codify the LoRA/QLoRA training runbook before executing long runs on the HPC cluster: specify target modules (q_proj, v_proj for Transformer; x_proj, in_proj, out_proj for Mamba-2), implement loss masking so gradients only flow on reasoning tokens and completions (not prompts), define checkpoint and early-stopping policies, and produce two configuration files (full LoRA for HPC, QLoRA 4-bit for Colab/local) plus a minimal smoke-test training run (100 steps) that validates the entire pipeline on a 1k curated subset.
+Codify the LoRA/QLoRA training runbook before executing long runs on the HPC cluster: default to the verified `#14` base model and `r <= 32`, start from the official 4-module demo target set (`in_proj`, `out_proj`, `up_proj`, `down_proj`), gate any broader konbu17-style target set behind PM signoff, implement explicit completion-only masking so prompt/user tokens are ignored by loss, define checkpoint and early-stopping policies, and produce configuration files plus a minimal smoke-test training run that validates the entire pipeline on a small curated subset.
 
 ## 2. Why It Matters
 
@@ -22,16 +22,16 @@ Codify the LoRA/QLoRA training runbook before executing long runs on the HPC clu
 
 ## 3. Strategy — How We Aim To Accomplish It
 
-1. **Confirm LoRA target modules by introspection**: Load base model, dump `model.named_modules()`, match against q_proj, v_proj (Transformer), x_proj, in_proj, out_proj (Mamba-2); document exact module names in `configs/lora_baseline.yaml`.
+1. **Confirm LoRA target modules by introspection**: Load the verified `#14` base model, dump `model.named_modules()`, start from the official demo set (`in_proj`, `out_proj`, `up_proj`, `down_proj`), and document any proposed expansion separately for PM signoff.
 2. **Verify tokenizer chat template and reasoning tokens**: Confirm `<think>` = token 12, `</think>` = token 13; validate that `apply_chat_template(..., enable_thinking=True)` produces expected token sequences.
 3. **Implement loss masking**: Write masking utility to set prompt token labels to -100 (ignored by loss), keep reasoning/answer tokens; unit test with synthetic input showing correct -100 mask alignment.
-4. **Codify LoRA configs**: Write `configs/lora_baseline.yaml` (r=64, alpha=128, dropout=0.05, bias="none", task_type="CAUSAL_LM") for HPC full LoRA; write `configs/lora_qlora.yaml` with 4-bit quantization for Colab.
+4. **Codify LoRA configs**: Write `configs/lora_baseline.yaml` with `r=32` or lower, bf16, explicit target modules, dropout/bias/task type, and completion-only masking; write `configs/lora_qlora.yaml` with 4-bit quantization for Colab/local smoke tests.
 5. **Define checkpoint/early-stopping policy**: Log checkpoint intervals (every 500 steps), eval interval (every 100 steps), early-stopping patience (3 evals without improvement), validation on golden_20.
 6. **Smoke-run sign-off**: Execute 100-step training on 1k curated subset using Unsloth on RTX 3080 with QLoRA, log loss curve to WandB, verify golden_20 pass rate ≥ 100%, save adapter as safetensors and load it back.
 
 ## 4. MVP (Minimum Viable Notebook)
 
-**Inputs**: Base model (4B BF16), 1k curated samples from #24, golden_20 validation set, requirements.txt pinning torch/transformers/peft/unsloth/trl.
+**Inputs**: Verified `#14` base model, 1k curated samples from #24, golden_20 validation set, requirements.txt pinning torch/transformers/peft/unsloth/trl.
 
 **Cells**:
 - Cell 1: Environment check (GPU, torch, transformers versions)
@@ -79,7 +79,7 @@ If Unsloth does not support the hybrid Mamba-2 + Transformer architecture on ins
 
 ## 6. Success Criteria (Done When)
 
-- [ ] `configs/lora_baseline.yaml` written with verified target module names (q_proj, v_proj, x_proj, in_proj, out_proj)
+- [ ] `configs/lora_baseline.yaml` written with `r<=32`, verified target module names, and PM signoff for any expansion beyond the official 4-module demo set
 - [ ] `configs/lora_qlora.yaml` written with 4-bit quantization params
 - [ ] `src/training/sft_trainer.py` contains masking utility; all prompt tokens set to label=-100
 - [ ] `tests/test_masking.py` passes with 100% prompt coverage in unit tests
@@ -109,7 +109,7 @@ If Unsloth does not support the hybrid Mamba-2 + Transformer architecture on ins
 ## 8. Artifacts & Handoff
 
 **Produces**:
-- `configs/lora_baseline.yaml` — Full LoRA (r=64, alpha=128) for HPC
+- `configs/lora_baseline.yaml` — Full LoRA (`r<=32`) for HPC
 - `configs/lora_qlora.yaml` — QLoRA 4-bit for Colab/RTX 3080
 - `src/training/sft_trainer.py` — SFT trainer wrapper + masking logic
 - `tests/test_masking.py` — Unit tests for loss masking (prompt -100 alignment)
