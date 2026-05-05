@@ -1,6 +1,6 @@
 # CS4650 NVIDIA Nemotron Model Reasoning Challenge
 
-Capstone project repo for Kaggle's **NVIDIA Nemotron Model Reasoning Challenge**. This repository currently contains **planning and architecture docs only**; implementation (code, notebooks, pipelines) will follow in later phases.
+Capstone project repo for Kaggle's **NVIDIA Nemotron Model Reasoning Challenge**. The repository has an active implementation: `src/` library, 248-test suite, 11 notebooks, synthetic data pipeline, SFT masking utility, and HPC training scripts. Submission deadline: 2026-06-15.
 
 ## Quick Links (Canonical Docs)
 - **Execution plan (source of truth):** `docs/planning/plan_v0.2.md`
@@ -103,22 +103,30 @@ classDiagram
 
 ## Feature Status (Current)
 
-### Finished
-- Planning docs and execution plan drafted (`docs/planning/plan_v0.2.md`)
-- Architecture & competition constraint documentation (`docs/architecture/*`)
-- Sprint mapping and execution docs (`docs/execution/*`)
-- Adversarial review + risk analysis (`docs/analysis/*`)
+### Implemented
+- Planning, architecture, and competition constraint docs (`docs/`)
+- Canonical schema + contracts (`src/contracts.py` — `ReasoningExample`, `SFTExample`, `EvalRecord`)
+- Dataset ingestion + EDA (notebooks 00–02)
+- Validation split + golden regression set code (`src/evaluation/`)
+- Golden gate + submission packaging (`src/evaluation/golden_gate.py`, `src/inference/submission.py`)
+- Bit-manipulation solver + `CategoryRouter` solver framework (`src/solvers/`, `src/inference/solver.py`)
+- Synthetic data pipeline: quality filters, cost caps, dry-run, fingerprinting (`src/data/synthetic.py`)
+- Prompt templates wired per category (`configs/synthetic_prompts.yaml`)
+- Notebook 08 fully executable (smoke generation, stub teacher, provenance)
+- SFT loss masking (`src/training/sft_trainer.py` — `apply_loss_mask()`)
+- Training configs: LoRA baseline r=32, QLoRA r=16, 100-step smoke (`configs/lora_*.yaml`, `configs/smoke_sft.yaml`)
+- Full HPC runbook scripts (`scripts/hpc/` — preflight, tokenize, sbatch×2, checkpoint, gate, package, resume)
+- 248 passing tests
 
-### Remaining (Implementation)
-- Phase 0: Repo setup + environment scaffolding (requirements, env, gitignore)
-- Phase 1: Baseline inference + smoke test + dummy Kaggle submission
-- Phase 2: Prompting strategy experiments + comparison
-- Phase 3: Data curation + validation/golden sets
-- Phase 4: SFT LoRA training and adapter output
-- Phase 5: Synthetic data generation
-- Phase 6: GRPO RL training (optional)
-- Phase 7: Evaluation + approach comparison
-- Phase 8: Final submission + capstone reporting
+### Pending (requires HPC / real data)
+- Real validation + golden artifacts (need Kaggle dataset access)
+- Real baseline eval run under `data/eval/runs/`
+- Prompt + decode sweeps (notebook 05, blocked on real splits)
+- Trajectory / failure slice collection (notebook 06)
+- Notebook 07 (teacher/solver framework walkthrough)
+- Actual SFT smoke training run on cluster
+- Checkpoint promotion through golden gate
+- Final adapter package + Kaggle submission
 
 ---
 

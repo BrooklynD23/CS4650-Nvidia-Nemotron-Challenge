@@ -104,9 +104,9 @@ Do not begin the dependent task until the upstream owner confirms:
 | `#20` | Closed | Execution | Packaging code, real adapter package missing |
 | `#21` | Open | Execution | Prompt sweeps, execution blocked |
 | `#22` | Open | Execution | Trajectory/failure slices, scaffold only |
-| `#23` | Open | Execution | Solver framework, scaffold only |
-| `#24` | Open | Execution | Synthetic data recipe, scaffold only |
-| `#25` | Open | Execution | SFT runbook/training, plan only |
+| `#23` | Open | Execution | Solver framework + CategoryRouter implemented; notebook 07 pending |
+| `#24` | Open | Execution | Synthetic data pipeline implemented; real artifact generation pending |
+| `#25` | Open | Execution | All 8 HPC scripts + training configs + masking implemented; smoke run pending |
 
 ## Issue TODOs
 
@@ -350,11 +350,13 @@ General chat warning:
 Owner lane: solver design
 
 - [ ] Implement notebook `07` beyond scaffold.
-- [ ] Define solver interface:
+- [x] Define solver interface:
   `solve(prompt) -> {answer, confidence, metadata}`.
+  Implemented: `src/inference/solver.py` — `Solver` Protocol + `SolverOutput` TypedDict + `CategoryRouter`.
 - [ ] Define verifier interface:
   `verify(pred, gold) -> bool`.
-- [ ] Define fallback policy for solver failure and LLM teacher usage.
+- [x] Define fallback policy for solver failure and LLM teacher usage.
+  Implemented: `CategoryRouter` retries once then returns `answer=None`; `configs/solver_routing.yaml` controls per-category thresholds.
 - [ ] Define logging and failure-mode taxonomy.
 - [x] Decide whether `#15` is a real dependency for this issue or just process
   boilerplate. Resolved: no — `#15` is the review harness only; `src/inference/solver.py` is not blocked by it.
@@ -376,15 +378,21 @@ Owner lane: solver implementation
 
 - [ ] Create a child execution issue, likely `#26`, for bit-manipulation solver
   implementation.
-- [ ] Define input fixtures from real or mirrored prompts.
-- [ ] Implement search over plausible operations:
+- [x] Define input fixtures from real or mirrored prompts.
+  Done: `tests/solvers/test_bit_manipulation.py` — `_prompt_lshift2()`, `_prompt_add3()`, `_prompt_xor4()`.
+- [x] Implement search over plausible operations:
   shifts, rotates, xor, and, or, not, masks, base conversion, simple numeric
   transforms.
-- [ ] Verify candidate rule against all in-prompt examples before predicting.
-- [ ] Return answer only when confidence threshold is met.
-- [ ] Add unit tests for successful inference, ambiguity, no-solution, and
+  Done: `src/solvers/bit_manipulation.py` — `_candidate_transforms()` enumerates 50+ operations.
+- [x] Verify candidate rule against all in-prompt examples before predicting.
+  Done: `_rule_confidence()` requires 100% match on all examples.
+- [x] Return answer only when confidence threshold is met.
+  Done: two-level gating — solver rejects ambiguous predictions + `CategoryRouter` enforces config threshold.
+- [x] Add unit tests for successful inference, ambiguity, no-solution, and
   formatting.
-- [ ] Wire solver into the framework from `#23`.
+  Done: 11 tests in `tests/solvers/test_bit_manipulation.py`.
+- [x] Wire solver into the framework from `#23`.
+  Done: `BitManipulationSolver` implements `Solver` Protocol; registered via `configs/solver_routing.yaml`.
 
 Blocked by:
 
@@ -401,17 +409,24 @@ General chat warning:
 
 Owner lane: synthetic data
 
-- [ ] Implement notebook `08` beyond scaffold.
-- [ ] Define teacher sources and solver-first / LLM-fallback policy.
-- [ ] Define generation prompts per category.
-- [ ] Define quality filters:
+- [x] Implement notebook `08` beyond scaffold.
+  Done: `notebooks/08_synthetic_data_recipe.ipynb` — executable generation loop, stub teacher fallback, fingerprint verify, summary table.
+- [x] Define teacher sources and solver-first / LLM-fallback policy.
+  Done: `src/data/synthetic.py` + `src/inference/solver.py` `CategoryRouter` — verifier-first, then `llm_teacher_fn`.
+- [x] Define generation prompts per category.
+  Done: `configs/synthetic_prompts.yaml` — 4 categories with system prompt, reasoning scaffold, problem formulation, answer format; wired into `generate_from_retry_candidates()` via `prompt_config_path`.
+- [x] Define quality filters:
   dedupe, answer validity, category validity, length limits, solver confidence,
   provenance completeness.
+  Done: `QualityFilter` in `src/data/synthetic.py` — all 6 checks including `solver_confidence_threshold` gate.
 - [x] Define output schema as `SFTExample` or a documented derivative.
   Resolved: `SFTExample` is defined and frozen in `src/contracts.py:97`; use as-is.
-- [ ] Produce small smoke synthetic set before large generation.
-- [ ] Add cost caps for paid APIs and dry-run token/cost estimates.
-- [ ] Document artifact paths and dataset fingerprint.
+- [x] Produce small smoke synthetic set before large generation.
+  Done: `smoke=True` flag caps generation at `_SMOKE_LIMIT=50` rows; `--smoke` CLI arg in `src/data/synthetic.py`.
+- [x] Add cost caps for paid APIs and dry-run token/cost estimates.
+  Done: `_COST_CAP_USD=20.0` enforced per run; `--dry-run` prints per-category token/cost estimates without API calls.
+- [x] Document artifact paths and dataset fingerprint.
+  Done: `docs/architecture/SYNTHETIC_PROVENANCE.md` — artifact layout, provenance schema, SHA-256 fingerprint algorithm, re-verification steps.
 
 Blocked by:
 
@@ -431,23 +446,28 @@ Owner lane: training
 
 - [x] Remove or revise stale `r=64` plan/config assumptions in coordination
   docs; default to rank `<=32` per the verified `#14` contract.
-- [ ] Implement expected HPC scripts from the runbook:
-  - `scripts/hpc/preflight.sh`
-  - `scripts/hpc/tokenize_dataset.py`
-  - `scripts/hpc/submit_sft.sbatch`
-  - `scripts/hpc/submit_rl.sbatch`
-  - `scripts/hpc/checkpoint_policy.py`
-  - `scripts/hpc/regression_gate.py`
-  - `scripts/hpc/package_adapter.py`
-  - `scripts/hpc/resume_from_latest.py`
-- [ ] Add training configs only when they use the verified `#14` base model and
+- [x] Implement expected HPC scripts from the runbook:
+  - `scripts/hpc/preflight.sh` — CUDA, weights path, SHA-256, disk space, Python deps
+  - `scripts/hpc/tokenize_dataset.py` — JSONL → .pt shards with `apply_loss_mask()`
+  - `scripts/hpc/submit_sft.sbatch` — SLURM (4 GPU, 64 GB, 24 h)
+  - `scripts/hpc/submit_rl.sbatch` — SLURM RL phase; requires `ALLOW_RL=1`
+  - `scripts/hpc/checkpoint_policy.py` — sidecar files + keep-last-3-plus-best rotation
+  - `scripts/hpc/regression_gate.py` — wraps `src.evaluation.golden_gate.run_gate()`; exit 0/1
+  - `scripts/hpc/package_adapter.py` — wraps `src.inference.submission`
+  - `scripts/hpc/resume_from_latest.py` — prints highest-step checkpoint path
+- [x] Add training configs only when they use the verified `#14` base model and
   adapter constraints.
-- [ ] Implement masking tests so prompt/user tokens are not trained unless
+  Done: `configs/lora_baseline.yaml` (r=32), `configs/lora_qlora.yaml` (r=16, 4-bit), `configs/smoke_sft.yaml` (100-step).
+- [x] Implement masking tests so prompt/user tokens are not trained unless
   explicitly intended.
+  Done: `src/training/sft_trainer.py` — `apply_loss_mask()`; `tests/training/test_masking.py` — 4 tests.
 - [ ] Run a tiny SFT smoke job before any production run.
-- [ ] Save checkpoints with sidecar metadata:
+  Mechanism ready (`configs/smoke_sft.yaml` + `scripts/hpc/submit_sft.sbatch`); actual run pending HPC access.
+- [x] Save checkpoints with sidecar metadata:
   trainer state, run config, metrics, git SHA, dataset fingerprint.
+  Done: `scripts/hpc/checkpoint_policy.py`.
 - [ ] Promote only checkpoints that pass golden and validation gates.
+  Gate code ready (`scripts/hpc/regression_gate.py`); promotion process pending first real training run.
 
 Blocked by:
 
