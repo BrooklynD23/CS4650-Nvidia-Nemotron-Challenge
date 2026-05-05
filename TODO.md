@@ -199,17 +199,17 @@ General chat warning:
 
 Owner lane: data
 
-- [ ] Download official Kaggle data after rules acceptance, or select an
+- [x] Download official Kaggle data after rules acceptance, or select an
   approved mirror for provisional local development.
-- [ ] Normalize rows into `ReasoningExample`:
+- [x] Normalize rows into `ReasoningExample`:
   `id`, `category`, `prompt`, `answer`, `source`, `split`, `metadata`.
-- [ ] Preserve extra columns under `metadata`.
-- [ ] Produce dataset version string and source provenance.
-- [ ] Run EDA for row counts, category distribution, prompt length, answer
+- [x] Preserve extra columns under `metadata`.
+- [x] Produce dataset version string and source provenance.
+- [x] Run EDA for row counts, category distribution, prompt length, answer
   shape, and missing-value anomalies.
-- [ ] Make `src/contracts.py` the single contract source unless the team
+- [x] Make `src/contracts.py` the single contract source unless the team
   chooses a separate schema module.
-- [ ] Update status docs so notebook `02` status matches actual execution and
+- [x] Update status docs so notebook `02` status matches actual execution and
   artifact state.
 
 Blocked by:
@@ -225,13 +225,13 @@ General chat warning:
 
 Owner lane: evaluation
 
-- [ ] Choose canonical eval artifact names and update all loaders/docs.
-- [ ] Generate the real validation split from canonical training rows.
-- [ ] Generate the real golden regression set.
-- [ ] Record seed, selection rule, dataset version, category distribution, and
+- [x] Choose canonical eval artifact names and update all loaders/docs.
+- [x] Generate the real validation split from canonical training rows.
+- [x] Generate the real golden regression set.
+- [x] Record seed, selection rule, dataset version, category distribution, and
   source split per row.
-- [ ] Ensure the golden set is immutable; replacement must create a new version.
-- [ ] Add a manifest or index if artifacts are not committed.
+- [x] Ensure the golden set is immutable; replacement must create a new version.
+- [x] Add a manifest or index if artifacts are not committed.
 - [ ] Resolve the documented `#18` / `#19` dependency cycle.
 
 Blocked by:
