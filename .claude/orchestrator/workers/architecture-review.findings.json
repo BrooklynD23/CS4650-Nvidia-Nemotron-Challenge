@@ -1,55 +1,83 @@
 {
-  "summary": "The notebook implementation of `04_baseline_eval_and_normalization.ipynb` is architecturally sound and well-aligned with the existing `src/evaluation/` infrastructure. The notebook correctly orchestrates the defined pipeline (ingest → predict → normalize → score → report) by delegating every domain concern to the appropriate `src/evaluation/` module rather than reimplementing logic inline. The predictor abstraction (`Predictor = Callable[[PredictRequest], PredictResponse]`) is correctly honoured: the stub predictor conforms to the contract, making real-model substitution a drop-in. Immutable frozen dataclasses are used consistently throughout both the library and the notebook, matching project coding standards. The synthetic fallback pattern for missing split artifacts is a valid provisional technique that prevents the notebook from becoming a hard dependency on unreleased data. One moderate concern is a subtle duplication of JSONL read/write logic between `src/evaluation/records.py` and `src/evaluation/reporting.py` — both expose equivalent `write_eval_records_jsonl`/`read_eval_records_jsonl` implementations. This pre-exists the notebook but is surfaced by its imports. Additional minor concerns include the inline golden-set definition coupling the notebook to specific category strings, the global mutable `_GOLD_MAP` that the stub predictor depends on, and the absence of notebook-level test execution that verifies the assertion cells actually run.",
-  "severity": "minor",
+  "summary": "The session delivered 6 features that integrate cleanly with the existing frozen-contract architecture (SFTExample, EvalRecord, PackageManifest in src/contracts.py). The loss-masking utility is a correct pure function with 4 focused tests. The 8 HPC scripts are well-scoped and respect the pipeline's JSONL/sidecar fingerprint convention. The QualityFilter correctly gates on boxed-format, deduplication, token length, provenance completeness, and solver confidence. However, several moderate issues exist: (1) smoke_sft.yaml declares an 'extends:' key that no config-loading code ever resolves, silently producing a flat config missing all base-model settings; (2) SyntheticConfig is a mutable dataclass while tests mutate it post-construction, violating the project's immutability rule; (3) the generation loop swallows verifier and LLM-teacher exceptions silently via bare 'except Exception: pass'; (4) apply_loss_mask's mask_role parameter is documented as controlling which role to mask but is actually unused; (5) all Python HPC scripts use fragile sys.path.insert rather than package installation; (6) _row_to_sft_example populates user message content with row.record.gold which is the EvalRecord expected-answer field, not the problem prompt — this may produce semantically inverted SFT training pairs.",
+  "severity": "moderate",
   "issues": [
     {
       "category": "abstraction",
+      "severity": "error",
+      "file": "configs/smoke_sft.yaml",
+      "message": "The 'extends: configs/lora_baseline.yaml' key is declared but no config-loading code (in tokenize_dataset.py or elsewhere) resolves YAML inheritance. yaml.safe_load returns the raw dict with only the 5 smoke-local keys. All base model settings (base_model, lora_r, target_modules, torch_dtype, etc.) are absent at runtime when only smoke_sft.yaml is passed as --config.",
+      "suggestion": "Either implement config inheritance resolution (merge parent YAML before consuming) or flatten smoke_sft.yaml to include all required keys explicitly. A helper like _load_config_with_extends() that walks the 'extends' chain would make the pattern reusable across all training configs."
+    },
+    {
+      "category": "consistency",
       "severity": "warning",
-      "file": "src/evaluation/records.py",
-      "message": "Duplicate JSONL read/write logic: `src/evaluation/records.py` and `src/evaluation/reporting.py` both define `write_eval_records_jsonl` and `read_eval_records_jsonl` with nearly identical implementations. The `reporting.py` docstring acknowledges this ('Deliberately mirrors ...') but the duplication means two code paths to maintain, with divergence risk.",
-      "suggestion": "Consolidate the canonical JSONL serialization into one location (either `records.py` or `reporting.py`), and have the other module re-export or delegate. This is a pre-existing issue but notebook cell 25 imports only from `reporting.py`, so that module should own the canonical implementation."
+      "file": "src/data/synthetic.py",
+      "message": "_row_to_sft_example sets the user message content to row.record.gold — which is the EvalRecord.gold field documented as the expected/correct answer, not the problem prompt. Using the expected answer as the user question may produce semantically inverted SFT training pairs (the model would learn to predict answers given other answers as input). The generation loop also uses row.record.gold as the {problem} template variable.",
+      "suggestion": "Verify whether EvalRecord.gold actually contains the problem text in this competition's data. If it is the expected answer, the pipeline needs a field that carries the original problem prompt (e.g. ReasoningExample.prompt via a join) and _row_to_sft_example should use that instead."
+    },
+    {
+      "category": "pattern",
+      "severity": "warning",
+      "file": "src/data/synthetic.py",
+      "message": "SyntheticConfig is a plain mutable dataclass. Tests mutate it after construction (config.llm_teacher_fn = llm_fn, config.verifier = verifier). This violates the project's immutability rule ('ALWAYS create new objects, NEVER mutate') and makes test setup invisible to readers who scan only the config-construction line.",
+      "suggestion": "Freeze SyntheticConfig (frozen=True) and use dataclasses.replace() for test variations, or use a builder/factory function that accepts all optional fields. Either approach surfaces all test intent at the construction site."
+    },
+    {
+      "category": "pattern",
+      "severity": "warning",
+      "file": "src/data/synthetic.py",
+      "message": "In generate_from_retry_candidates, both the verifier branch and the LLM-teacher branch use 'except Exception: pass' to swallow all errors silently. A model download failure, API timeout, or import error would cause the example to be skipped with no log entry, making debugging very difficult in HPC batch jobs where stderr is the only signal.",
+      "suggestion": "Replace bare pass with at minimum a logged warning: log.warning('teacher failed for %s: %s', row.record.example_id, exc). Consider re-raising non-recoverable errors (ImportError, PermissionError) so the job fails fast rather than silently producing an empty dataset."
+    },
+    {
+      "category": "abstraction",
+      "severity": "warning",
+      "file": "src/training/sft_trainer.py",
+      "message": "apply_loss_mask accepts a mask_role: str = 'user' parameter documented as 'the primary non-assistant role to mask', but the implementation ignores this value entirely and masks ALL non-assistant roles unconditionally. Callers may pass 'system' thinking it will preserve user-turn labels, but it will not — the parameter has no effect.",
+      "suggestion": "Either (a) remove mask_role and document that all non-assistant roles are always masked, or (b) implement selective masking so the parameter actually controls which roles are masked. If kept for API compatibility, add a clear deprecation note in the docstring."
     },
     {
       "category": "coupling",
       "severity": "warning",
-      "file": "notebooks/04_baseline_eval_and_normalization.ipynb",
-      "message": "The notebook embeds inline synthetic golden rows keyed to specific competition category strings (`bit_manipulation`, `unit_conversion`, `text_cipher`, etc.). If the canonical category taxonomy in `src/contracts.py` or the competition rules changes, this hardcoded list will silently diverge from the real data without any contract check.",
-      "suggestion": "Consider deriving synthetic examples from a shared constants module or config file, or at minimum adding an assertion that every synthetic row's `category` is a member of a defined allowed-categories set sourced from the contracts layer."
-    },
-    {
-      "category": "complexity",
-      "severity": "warning",
-      "file": "notebooks/04_baseline_eval_and_normalization.ipynb",
-      "message": "The stub predictor relies on a module-level mutable dict `_GOLD_MAP` built from `val_rows + golden_rows` at cell-definition time (cell 14). Because Jupyter cells execute imperatively, this creates an implicit ordering dependency: cell 14 must run after cells 11 and 12, but the dict is constructed at capture time without explicit parameter passing. If cells are re-run out of order, `_GOLD_MAP` may be stale.",
-      "suggestion": "Pass `gold_map` as an explicit parameter to the stub predictor factory rather than capturing it from module-level state. A `make_stub_predictor(gold_map)` factory pattern would make the dependency explicit and safe to re-run."
+      "file": "scripts/hpc/tokenize_dataset.py",
+      "message": "All Python HPC scripts (tokenize_dataset.py, regression_gate.py, package_adapter.py, resume_from_latest.py, checkpoint_policy.py) use sys.path.insert(0, _REPO_ROOT) to resolve src.* imports. This pattern breaks if scripts are invoked from a different working directory, inside a subprocess, or after the repo is moved. It also bypasses package isolation.",
+      "suggestion": "Install the project as an editable package (pip install -e . with a minimal setup.py or pyproject.toml) and remove all sys.path manipulation. The SLURM scripts already activate a venv; the package install belongs in venv setup, not duplicated in every script."
     },
     {
       "category": "consistency",
+      "severity": "warning",
+      "file": "src/data/synthetic.py",
+      "message": "The QualityFilter.accept() method returns bool, but the feature spec described returning a (bool, reason_str) tuple for rejection reasons. The implemented API is simpler but loses observability: callers cannot distinguish why an example was rejected (no_boxed vs. low_confidence vs. duplicate) without re-running the filter with instrumentation.",
+      "suggestion": "Consider returning a FilterResult named tuple or an enum-based rejection reason. At minimum, add a rejected_count_by_reason: dict[str, int] property to QualityFilter so callers can log filter statistics without re-implementing the logic."
+    },
+    {
+      "category": "pattern",
+      "severity": "warning",
+      "file": "src/data/synthetic.py",
+      "message": "_make_provenance() does not populate solver_confidence by default. If QualityFilter is configured with solver_confidence_threshold > 0, any example whose provenance was built by _make_provenance() without an explicit extra={'solver_confidence': score} defaults to 0.0 and will be silently rejected. This implicit contract is not enforced or documented at the provenance construction site.",
+      "suggestion": "Add solver_confidence as an explicit optional parameter to _make_provenance (default None). When threshold filtering is active, examples without an explicit solver_confidence should either default to 1.0 (trust verifier-path examples) or raise, not silently default to 0.0."
+    },
+    {
+      "category": "complexity",
       "severity": "info",
-      "file": "notebooks/04_baseline_eval_and_normalization.ipynb",
-      "message": "The round-trip validation assertions in cell 25 only spot-check the first 3 records (`reloaded_records[:3]`). For a notebook that documents the artifact contract, full-population assertion would be more consistent with the 'fail closed' validation philosophy applied throughout `src/evaluation/`.",
-      "suggestion": "Replace the `[:3]` slice with a full-population assertion loop, or at minimum add an assertion that all records carry the same attribution fields rather than sampling only the first three."
+      "file": "src/data/synthetic.py",
+      "message": "generate_from_retry_candidates has three responsibilities: candidate iteration and teacher invocation, cost accounting, and quality filtering. Cost accounting uses a mutable accumulated_cost local variable that is reset on each call. If the caller wants to aggregate cost across multiple calls, they must instrument from outside.",
+      "suggestion": "Consider returning a GenerationResult dataclass that includes the filtered examples plus run statistics (total_candidates, cost_incurred_usd, rejection_counts). This separates reporting from filtering without adding a class, and gives callers cost visibility."
     },
     {
       "category": "scalability",
       "severity": "info",
-      "file": "notebooks/04_baseline_eval_and_normalization.ipynb",
-      "message": "The val and golden split rows are loaded entirely into memory as Python lists before the pipeline runs. This is appropriate for the current synthetic scale (19 val rows, 7 golden rows), but should be acknowledged as a provisional design choice.",
-      "suggestion": "Document in the 'Provisional Assumptions' table that in-memory loading is intentional for the stub/synthetic phase, and flag it as a scaling assumption to revisit when real split artifacts are produced at competition size."
-    },
-    {
-      "category": "pattern",
-      "severity": "info",
-      "file": "notebooks/04_baseline_eval_and_normalization.ipynb",
-      "message": "The `REPO_ROOT` detection logic (walking parent directories looking for `src/` + `notebooks/`) is duplicated across multiple notebooks. If a notebook is moved or run from an unexpected working directory, the heuristic could silently pick the wrong root.",
-      "suggestion": "Extract repo-root resolution into a shared `src/tooling/notebook_env.py` utility so all notebooks use a single, tested implementation rather than each carrying their own copy."
+      "file": "scripts/hpc/tokenize_dataset.py",
+      "message": "_load_raw_rows reads the entire JSONL into memory before tokenization begins. For large datasets this may exceed per-node RAM on HPC clusters. The sharded output design already anticipates streaming, but the input loading does not.",
+      "suggestion": "Switch to a streaming generator that yields one row at a time, feeding directly into the tokenization+buffer loop. This keeps memory usage bounded to roughly one shard at a time regardless of input size."
     }
   ],
   "recommendations": [
-    "Consolidate the duplicated `write_eval_records_jsonl`/`read_eval_records_jsonl` logic between `src/evaluation/records.py` and `src/evaluation/reporting.py` before the eval infrastructure is used in CI pipelines — two diverging implementations risk subtle scoring inconsistencies.",
-    "Replace the module-level `_GOLD_MAP` in the stub predictor with an explicit factory function (`make_stub_predictor(gold_map)`) to eliminate the implicit cell-ordering dependency and make the notebook safe to re-execute non-linearly.",
-    "Scope the inline synthetic category strings to a defined constant or config so that a competition taxonomy change does not silently break the notebook's synthetic fallback without a contract-level error.",
-    "Extend the round-trip validation assertions (cell 25) to cover all records rather than just the first three, to stay consistent with the 'fail closed' validation philosophy in the `src/evaluation/` layer.",
-    "Extract common notebook bootstrapping code (repo-root detection, sys.path setup) into a shared `src/tooling/notebook_env.py` module to reduce duplication across all numbered notebooks."
+    "Implement or remove the 'extends:' config inheritance in smoke_sft.yaml before any real training run — the smoke job currently silently uses a config with no base model, LoRA rank, or target modules set.",
+    "Audit the SFT example construction in _row_to_sft_example to confirm that EvalRecord.gold is the correct field for user message content; if it carries the expected answer rather than the problem text, fix the field mapping before any training data is generated.",
+    "Replace all sys.path.insert patterns in scripts/hpc/ with a pip install -e . in the venv setup step — the preflight.sh already checks src.training.sft_trainer importability, making package installation the cleanest fix.",
+    "Add structured rejection logging to QualityFilter so that HPC batch runs produce observable filter statistics (per-reason rejection counts) without requiring callers to re-implement filter logic.",
+    "Freeze SyntheticConfig (frozen=True) and use dataclasses.replace() in tests to enforce the project's immutability rule and make test intent visible at construction time."
   ]
 }
