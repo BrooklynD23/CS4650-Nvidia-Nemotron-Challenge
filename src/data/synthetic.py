@@ -23,8 +23,8 @@ from typing import Any, Callable
 
 import yaml
 
-from src.contracts import SFTExample
-from src.evaluation.trajectory import TrajectoryRow
+from src.contracts import EvalRecord, SFTExample
+from src.evaluation.trajectory import ErrorType, TrajectoryRow
 
 _BOXED_MARKER = r"\boxed{"
 _MAX_TOKENS = 8192
@@ -264,6 +264,38 @@ def write_sft_examples_jsonl(examples: list[SFTExample], path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
+# CLI helpers
+# ---------------------------------------------------------------------------
+
+_DEFAULT_CANDIDATES_PATH = Path("data/analysis/retry_candidates.jsonl")
+_DEFAULT_OUTPUT_PATH = Path("data/processed/synthetic_train.jsonl")
+
+
+def _load_retry_candidates(path: Path) -> list[TrajectoryRow]:
+    """Load retry candidates from JSONL; return empty list if file absent."""
+    if not path.exists():
+        print(f"[synthetic] {path} not found — using empty candidate list (expected until #22 is built)")
+        return []
+    rows: list[TrajectoryRow] = []
+    with path.open(encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            d = json.loads(line)
+            record = EvalRecord(**d["record"])
+            row = TrajectoryRow(
+                record=record,
+                prompt_template_id=d["prompt_template_id"],
+                error_type=ErrorType(d["error_type"]),
+                recoverability=d["recoverability"],
+            )
+            rows.append(row)
+    print(f"[synthetic] loaded {len(rows)} retry candidates from {path}")
+    return rows
+
+
+# ---------------------------------------------------------------------------
 # CLI entry point
 # ---------------------------------------------------------------------------
 
@@ -271,17 +303,40 @@ def _main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Synthetic data generation pipeline")
     parser.add_argument("--smoke", action="store_true", help=f"Cap at {_SMOKE_LIMIT} examples")
     parser.add_argument("--dry-run", action="store_true", help="Print estimates, no API calls")
-    parser.add_argument("--output-dir", default="data/synthetic", help="Output directory")
+    parser.add_argument(
+        "--candidates",
+        default=str(_DEFAULT_CANDIDATES_PATH),
+        help="Path to retry_candidates.jsonl",
+    )
+    parser.add_argument(
+        "--output",
+        default=str(_DEFAULT_OUTPUT_PATH),
+        help="Output JSONL path",
+    )
     args = parser.parse_args(argv)
 
+    output_path = Path(args.output)
     config = SyntheticConfig(
-        output_dir=Path(args.output_dir),
+        output_dir=output_path.parent,
         categories=["bit_manipulation", "math", "code", "science"],
     )
 
     print(f"[synthetic] smoke={args.smoke}, dry_run={args.dry_run}")
-    print(f"[synthetic] output_dir={config.output_dir}")
-    print("[synthetic] No retry_candidates.jsonl provided — pass candidates programmatically.")
+    print(f"[synthetic] output={output_path}")
+
+    candidates = _load_retry_candidates(Path(args.candidates))
+    results = generate_from_retry_candidates(
+        candidates,
+        config,
+        smoke=args.smoke,
+        dry_run=args.dry_run,
+    )
+
+    if not args.dry_run:
+        write_sft_examples_jsonl(results, output_path)
+        print(f"[synthetic] wrote {len(results)} examples → {output_path}")
+        sha_path = output_path.with_suffix(".sha256")
+        print(f"[synthetic] fingerprint → {sha_path}")
 
 
 if __name__ == "__main__":
