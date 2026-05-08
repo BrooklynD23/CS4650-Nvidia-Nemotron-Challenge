@@ -39,7 +39,7 @@ Every local notebook must include the following sections inside the notebook:
 | `notebooks/06_trajectory_collection_and_error_slices.ipynb` | `#22` | Classify EvalRecord failures into error types; produce retry-candidate set and error-slice taxonomy | active |
 | `notebooks/07_solver_framework_design.ipynb` | `#23` | Implement Solver/Verifier protocols, CategoryRouter, BitManipulationSolver; produce solver_routing.yaml and SOLVER_DESIGN.md | active |
 | `notebooks/08_synthetic_data_recipe.ipynb` | `#24` | Implement synthetic data pipeline with solver-first teacher policy, quality filters, cost cap, and SHA-256 fingerprinting. T2.5 smoke run 2026-05-08: dry-run OK (0 candidates, $0.0000 est); smoke write OK (0 rows → `data/processed/synthetic_train.jsonl` + `.sha256`). `data/analysis/retry_candidates.jsonl` absent (expected — #22 not yet built). | active |
-| `notebooks/09_sft_runbook_and_masking.ipynb` | `#25` | Specify LoRA/QLoRA runbook, masking, and checkpoint policy | scaffolded |
+| `notebooks/09_sft_runbook_and_masking.ipynb` | `#25` | Specify LoRA/QLoRA runbook, masking, and checkpoint policy | active |
 | `notebooks/10_submission_packaging_and_provenance.ipynb` | `#20` | Document the implemented packager entrypoint + provenance policy | active |
 
 ## Cross-Notebook Architectural Decisions
