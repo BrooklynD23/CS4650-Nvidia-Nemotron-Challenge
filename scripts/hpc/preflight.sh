@@ -33,16 +33,19 @@ fail() { err "$*"; EXIT_CODE=1; }
 EXIT_CODE=0
 SHOW=0
 WRITE_CONFIG=0
+LOCAL=0
 
 # ---------------------------------------------------------------------------
 # Argument parsing
 # ---------------------------------------------------------------------------
 usage() {
   cat <<EOF
-Usage: $0 [--show] [--write-config] [--help]
+Usage: $0 [--show] [--write-config] [--local] [--help]
 
   --show          Print frozen contract vars and exit.
   --write-config  Write run_config.json to \${RUN_ROOT}/\${RUN_TAG}/.
+  --local         Local smoke mode: skip frozen BASE_MODEL_ID and model-weights-path
+                  checks; still runs CUDA, disk, package, and dataset SHA256 checks.
   --help          Show this message.
 
 Required env vars for full preflight:
@@ -58,6 +61,7 @@ for arg in "$@"; do
   case "$arg" in
     --show) SHOW=1 ;;
     --write-config) WRITE_CONFIG=1 ;;
+    --local) LOCAL=1 ;;
     --help|-h) usage; exit 0 ;;
     *) err "Unknown argument: $arg"; usage; exit 1 ;;
   esac
@@ -84,7 +88,9 @@ fi
 # ---------------------------------------------------------------------------
 info "Checking frozen contract vars..."
 
-if [[ -z "${BASE_MODEL_ID:-}" ]]; then
+if [[ $LOCAL -eq 1 ]]; then
+  info "LOCAL mode: skipping frozen BASE_MODEL_ID check (got '${BASE_MODEL_ID:-<unset>}')"
+elif [[ -z "${BASE_MODEL_ID:-}" ]]; then
   fail "BASE_MODEL_ID is not set"
 elif [[ "${BASE_MODEL_ID}" != "${FROZEN_BASE_MODEL_ID}" ]]; then
   fail "BASE_MODEL_ID mismatch: got '${BASE_MODEL_ID}', expected '${FROZEN_BASE_MODEL_ID}'"
@@ -132,14 +138,18 @@ fi
 # ---------------------------------------------------------------------------
 # 3. Model weights path
 # ---------------------------------------------------------------------------
-info "Checking model weights path..."
-if [[ -z "${MODEL_WEIGHTS_PATH:-}" ]]; then
-  info "MODEL_WEIGHTS_PATH is unset — will use HF download at runtime"
+if [[ $LOCAL -eq 1 ]]; then
+  info "LOCAL mode: skipping model weights path check"
 else
-  if [[ -d "${MODEL_WEIGHTS_PATH}" ]]; then
-    pass "Model weights path exists: ${MODEL_WEIGHTS_PATH}"
+  info "Checking model weights path..."
+  if [[ -z "${MODEL_WEIGHTS_PATH:-}" ]]; then
+    info "MODEL_WEIGHTS_PATH is unset — will use HF download at runtime"
   else
-    fail "Model weights path does not exist: ${MODEL_WEIGHTS_PATH}"
+    if [[ -d "${MODEL_WEIGHTS_PATH}" ]]; then
+      pass "Model weights path exists: ${MODEL_WEIGHTS_PATH}"
+    else
+      fail "Model weights path does not exist: ${MODEL_WEIGHTS_PATH}"
+    fi
   fi
 fi
 
