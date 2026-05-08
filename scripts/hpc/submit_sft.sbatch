@@ -84,8 +84,9 @@ LOG_DIR="${LOG_ROOT:-${RUN_ROOT}/${RUN_TAG}/logs}"
 CHECKPOINT_DIR="${CHECKPOINT_ROOT:-${RUN_ROOT}}/${RUN_TAG}/checkpoints"
 TOKENIZED_DIR="${TOKENIZED_DIR:-${DATA_ROOT}/processed/tokenized_${RUN_TAG}}"
 CONFIG_PATH="${CONFIG_PATH:-configs/lora_sft.yaml}"
+RUN_DIR="${RUN_ROOT}/${RUN_TAG}"
 
-mkdir -p "${LOG_DIR}" "${CHECKPOINT_DIR}" "${TOKENIZED_DIR}"
+mkdir -p "${LOG_DIR}" "${CHECKPOINT_DIR}" "${TOKENIZED_DIR}" "${RUN_DIR}"
 
 git rev-parse HEAD > "${CHECKPOINT_DIR}/git_sha.txt" 2>/dev/null \
   || echo "unknown" > "${CHECKPOINT_DIR}/git_sha.txt"
@@ -113,53 +114,23 @@ if [[ -f "${TOKENIZED_DIR}/dataset_fingerprint.json" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Step 3: SFT training loop stub
+# Step 3: SFT training
 # ---------------------------------------------------------------------------
 echo ""
 echo "=== Step 3: SFT training ==="
 bash scripts/hpc/preflight.sh --write-config
 
-python - <<'PYEOF'
-"""Stub SFT training loop.
+RESUME_ARG=""
+if LATEST=$(python scripts/hpc/resume_from_latest.py "$RUN_DIR/checkpoints" 2>/dev/null); then
+    [ -n "$LATEST" ] && RESUME_ARG="--resume-from-checkpoint $LATEST"
+fi
 
-Replace this block with a real trainer call, e.g.:
-    from trl import SFTTrainer
-    trainer = SFTTrainer(model=..., args=..., train_dataset=...)
-    trainer.train()
-"""
-import datetime
-import json
-import os
-import pathlib
-
-checkpoint_dir = pathlib.Path(os.environ["CHECKPOINT_ROOT"]) \
-    / os.environ["RUN_TAG"] / "checkpoints"
-tokenized_dir = os.environ.get(
-    "TOKENIZED_DIR",
-    os.path.join(os.environ["DATA_ROOT"], "processed",
-                 f"tokenized_{os.environ['RUN_TAG']}"),
-)
-
-print(f"SFT training stub — shards in {tokenized_dir}")
-print(f"BASE_MODEL_ID       = {os.environ.get('BASE_MODEL_ID', '')}")
-print(f"LORA_RANK           = {os.environ.get('LORA_RANK', '')}")
-print(f"LORA_TARGET_MODULES = {os.environ.get('LORA_TARGET_MODULES', '')}")
-print(f"Checkpoint dir      = {checkpoint_dir}")
-
-metrics_path = checkpoint_dir / "metrics.jsonl"
-stub_record = {
-    "step": 0,
-    "train_loss": None,
-    "eval_loss": None,
-    "timestamp": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-    "note": "stub — replace with real training metrics",
-}
-with metrics_path.open("a") as fh:
-    fh.write(json.dumps(stub_record) + "\n")
-
-print(f"Stub metrics written: {metrics_path}")
-print("SFT training stub complete.")
-PYEOF
+python scripts/hpc/run_sft.py \
+    --config "$CONFIG_PATH" \
+    --data-dir "$TOKENIZED_DIR" \
+    --output-dir "$RUN_DIR" \
+    $RESUME_ARG \
+    2>&1 | tee -a "$RUN_DIR/train.log"
 
 # ---------------------------------------------------------------------------
 # Step 4: Apply checkpoint policy
