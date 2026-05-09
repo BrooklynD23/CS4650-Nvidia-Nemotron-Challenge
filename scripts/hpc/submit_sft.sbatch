@@ -66,6 +66,7 @@ mkdir -p "${HF_HOME}"
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${REPO_ROOT}"
+export PYTHONPATH="${REPO_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
 
 # ---------------------------------------------------------------------------
 # Step 1: Preflight gate
@@ -119,17 +120,20 @@ fi
 echo ""
 echo "=== Step 3: SFT training ==="
 bash scripts/hpc/preflight.sh --write-config
+if [[ -f "${RUN_DIR}/run_config.json" ]]; then
+  cp "${RUN_DIR}/run_config.json" "${CHECKPOINT_DIR}/run_config.json"
+fi
 
-RESUME_ARG=""
-if LATEST=$(python scripts/hpc/resume_from_latest.py "$RUN_DIR/checkpoints" 2>/dev/null); then
-    [ -n "$LATEST" ] && RESUME_ARG="--resume-from-checkpoint $LATEST"
+RESUME_ARG=()
+if LATEST=$(python scripts/hpc/resume_from_latest.py --checkpoint-dir "$CHECKPOINT_DIR" 2>/dev/null); then
+    [ -n "$LATEST" ] && RESUME_ARG=(--resume-from-checkpoint "$LATEST")
 fi
 
 python scripts/hpc/run_sft.py \
     --config "$CONFIG_PATH" \
     --data-dir "$TOKENIZED_DIR" \
-    --output-dir "$RUN_DIR" \
-    $RESUME_ARG \
+    --output-dir "$CHECKPOINT_DIR" \
+    "${RESUME_ARG[@]}" \
     2>&1 | tee -a "$RUN_DIR/train.log"
 
 # ---------------------------------------------------------------------------
@@ -137,9 +141,7 @@ python scripts/hpc/run_sft.py \
 # ---------------------------------------------------------------------------
 echo ""
 echo "=== Step 4: Checkpoint policy ==="
-python scripts/hpc/checkpoint_policy.py \
-  --checkpoint-dir "${CHECKPOINT_DIR}" \
-  --run-config "${CHECKPOINT_DIR}/run_config.json" || true
+echo "INFO: Checkpoint policy was applied by run_sft.py."
 
 echo ""
 echo "=== SFT job complete: $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="

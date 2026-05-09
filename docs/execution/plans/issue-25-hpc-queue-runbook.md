@@ -34,6 +34,10 @@ This plan covers the operational runbook for:
 - regression gates for eval promotion
 - artifact storage conventions for HPC outputs
 
+The current implementation keeps the batch wrapper thin: `submit_sft.sbatch`
+exports `PYTHONPATH`, `run_sft.py` validates config before model load, and the
+training entrypoint applies checkpoint rotation once at the end of the run.
+
 This plan does **not** define notebook cells or notebook execution flows.
 
 ## Job Types
@@ -77,7 +81,7 @@ This plan does **not** define notebook cells or notebook execution flows.
 | `${DATA_ROOT}/raw/` | raw competition and mirror datasets | read-only after ingest |
 | `${DATA_ROOT}/processed/` | filtered / tokenized / cached datasets | keep by dataset fingerprint |
 | `${RUN_ROOT}/${RUN_TAG}/logs/` | `slurm-*.out`, stderr, env snapshots | keep until final handoff |
-| `${RUN_ROOT}/${RUN_TAG}/checkpoints/` | `step-XXXXX/`, `last/`, `best/` | keep last 3 + best |
+| `${RUN_ROOT}/${RUN_TAG}/checkpoints/` | `checkpoint-XXXXX/`, `last/`, `best/` | keep last 3 + best |
 | `${RUN_ROOT}/${RUN_TAG}/eval/` | JSONL / Parquet eval records, summaries | keep all runs that passed gates |
 | `${RUN_ROOT}/${RUN_TAG}/package/` | final zip, manifest, hashes | keep all promoted artifacts |
 | `adapters/issue-25/${RUN_TAG}/` | selected final adapter mirror | copy only after eval gate passes |
@@ -88,6 +92,8 @@ This plan does **not** define notebook cells or notebook execution flows.
 - Save SFT checkpoints every 500 steps or every 30 minutes, whichever comes first.
 - Save RL checkpoints every 200 steps or every 20 minutes, whichever comes first.
 - Keep the last 3 checkpoints plus one `best/` checkpoint chosen by validation score.
+- Store SFT checkpoints as `checkpoint-XXXXX/` directories under
+  `${RUN_ROOT}/${RUN_TAG}/checkpoints/`.
 - Write checkpoints atomically: stage into a temporary directory, then rename into the final checkpoint path.
 - Always write these sidecar files next to each checkpoint:
   - `trainer_state.json`
@@ -160,6 +166,15 @@ python scripts/hpc/package_adapter.py \
   --output "${RUN_ROOT}/${RUN_TAG}/package"
 ```
 
+```bash
+python scripts/hpc/resume_from_latest.py \
+  --checkpoint-dir "${CHECKPOINT_ROOT}/${RUN_TAG}/checkpoints"
+```
+
+For local smoke, `bash scripts/hpc/preflight.sh --local` supplies defaults for
+`LORA_RANK`, `LORA_TARGET_MODULES`, and `NORMALIZER_ID`; cluster preflight keeps
+the frozen contract strict and expects those env vars to be set explicitly.
+
 ## Task Plan
 
 ### Task 1: Freeze queue inputs
@@ -207,7 +222,7 @@ Expected: prints the keep-last-3-plus-best policy and the atomic checkpoint path
 
 - [ ] **Step 2: Verify resume behavior**
 
-Run: `python scripts/hpc/resume_from_latest.py --run-tag ${RUN_TAG}`
+Run: `python scripts/hpc/resume_from_latest.py --checkpoint-dir "${CHECKPOINT_ROOT}/${RUN_TAG}/checkpoints"`
 Expected: selects the latest checkpoint that passed the most recent regression gate.
 
 ### Task 4: Add regression gates

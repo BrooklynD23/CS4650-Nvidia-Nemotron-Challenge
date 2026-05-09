@@ -1,83 +1,78 @@
 {
-  "summary": "The session delivered 6 features that integrate cleanly with the existing frozen-contract architecture (SFTExample, EvalRecord, PackageManifest in src/contracts.py). The loss-masking utility is a correct pure function with 4 focused tests. The 8 HPC scripts are well-scoped and respect the pipeline's JSONL/sidecar fingerprint convention. The QualityFilter correctly gates on boxed-format, deduplication, token length, provenance completeness, and solver confidence. However, several moderate issues exist: (1) smoke_sft.yaml declares an 'extends:' key that no config-loading code ever resolves, silently producing a flat config missing all base-model settings; (2) SyntheticConfig is a mutable dataclass while tests mutate it post-construction, violating the project's immutability rule; (3) the generation loop swallows verifier and LLM-teacher exceptions silently via bare 'except Exception: pass'; (4) apply_loss_mask's mask_role parameter is documented as controlling which role to mask but is actually unused; (5) all Python HPC scripts use fragile sys.path.insert rather than package installation; (6) _row_to_sft_example populates user message content with row.record.gold which is the EvalRecord expected-answer field, not the problem prompt — this may produce semantically inverted SFT training pairs.",
+  "summary": "The sprint delivers a coherent training pipeline across six features: a YAML-based config chain resolver, a LoRA launcher, a passthrough data collator, a preflight gate with a --local flag, and a runbook notebook. The core design decisions — separating pre-masking in tokenize_dataset.py from training in run_sft.py, using an extends: inheritance chain for configs, and keeping scripts/hpc/ launchers thin over a src/ library — are sound and well-documented. However, there is a significant naming-convention mismatch between the checkpoint management utilities (checkpoint_policy.py, resume_from_latest.py) that use a step-XXXXX pattern and what HuggingFace/trl SFTTrainer actually writes (checkpoint-XXXXX), rendering both the checkpoint rotation policy and the resume detection effectively inoperative without an adapter layer. A secondary issue is a double invocation of checkpoint_policy logic — once from within run_sft.py and once from submit_sft.sbatch Step 4 — targeting different directories, neither of which contains step-XXXXX dirs.",
   "severity": "moderate",
   "issues": [
     {
-      "category": "abstraction",
-      "severity": "error",
-      "file": "configs/smoke_sft.yaml",
-      "message": "The 'extends: configs/lora_baseline.yaml' key is declared but no config-loading code (in tokenize_dataset.py or elsewhere) resolves YAML inheritance. yaml.safe_load returns the raw dict with only the 5 smoke-local keys. All base model settings (base_model, lora_r, target_modules, torch_dtype, etc.) are absent at runtime when only smoke_sft.yaml is passed as --config.",
-      "suggestion": "Either implement config inheritance resolution (merge parent YAML before consuming) or flatten smoke_sft.yaml to include all required keys explicitly. A helper like _load_config_with_extends() that walks the 'extends' chain would make the pattern reusable across all training configs."
-    },
-    {
       "category": "consistency",
-      "severity": "warning",
-      "file": "src/data/synthetic.py",
-      "message": "_row_to_sft_example sets the user message content to row.record.gold — which is the EvalRecord.gold field documented as the expected/correct answer, not the problem prompt. Using the expected answer as the user question may produce semantically inverted SFT training pairs (the model would learn to predict answers given other answers as input). The generation loop also uses row.record.gold as the {problem} template variable.",
-      "suggestion": "Verify whether EvalRecord.gold actually contains the problem text in this competition's data. If it is the expected answer, the pipeline needs a field that carries the original problem prompt (e.g. ReasoningExample.prompt via a join) and _row_to_sft_example should use that instead."
-    },
-    {
-      "category": "pattern",
-      "severity": "warning",
-      "file": "src/data/synthetic.py",
-      "message": "SyntheticConfig is a plain mutable dataclass. Tests mutate it after construction (config.llm_teacher_fn = llm_fn, config.verifier = verifier). This violates the project's immutability rule ('ALWAYS create new objects, NEVER mutate') and makes test setup invisible to readers who scan only the config-construction line.",
-      "suggestion": "Freeze SyntheticConfig (frozen=True) and use dataclasses.replace() for test variations, or use a builder/factory function that accepts all optional fields. Either approach surfaces all test intent at the construction site."
-    },
-    {
-      "category": "pattern",
-      "severity": "warning",
-      "file": "src/data/synthetic.py",
-      "message": "In generate_from_retry_candidates, both the verifier branch and the LLM-teacher branch use 'except Exception: pass' to swallow all errors silently. A model download failure, API timeout, or import error would cause the example to be skipped with no log entry, making debugging very difficult in HPC batch jobs where stderr is the only signal.",
-      "suggestion": "Replace bare pass with at minimum a logged warning: log.warning('teacher failed for %s: %s', row.record.example_id, exc). Consider re-raising non-recoverable errors (ImportError, PermissionError) so the job fails fast rather than silently producing an empty dataset."
-    },
-    {
-      "category": "abstraction",
-      "severity": "warning",
-      "file": "src/training/sft_trainer.py",
-      "message": "apply_loss_mask accepts a mask_role: str = 'user' parameter documented as 'the primary non-assistant role to mask', but the implementation ignores this value entirely and masks ALL non-assistant roles unconditionally. Callers may pass 'system' thinking it will preserve user-turn labels, but it will not — the parameter has no effect.",
-      "suggestion": "Either (a) remove mask_role and document that all non-assistant roles are always masked, or (b) implement selective masking so the parameter actually controls which roles are masked. If kept for API compatibility, add a clear deprecation note in the docstring."
+      "severity": "error",
+      "file": "scripts/hpc/checkpoint_policy.py",
+      "message": "checkpoint_policy.py and resume_from_latest.py both scan for subdirectories matching ^step-(\\d+)$ but trl.SFTTrainer (via HuggingFace Trainer) saves checkpoints as checkpoint-{step}/ (e.g. checkpoint-100). The pattern will never match, so checkpoint rotation silently does nothing and resume detection always returns no checkpoint found.",
+      "suggestion": "Either update _STEP_RE = re.compile(r'^checkpoint-(\\d+)$') in both scripts to match HuggingFace Trainer output, or add a custom TrainerCallback that renames checkpoint-N dirs to step-N after each save_steps event. Prefer the former since it eliminates the rename side-effect."
     },
     {
       "category": "coupling",
-      "severity": "warning",
-      "file": "scripts/hpc/tokenize_dataset.py",
-      "message": "All Python HPC scripts (tokenize_dataset.py, regression_gate.py, package_adapter.py, resume_from_latest.py, checkpoint_policy.py) use sys.path.insert(0, _REPO_ROOT) to resolve src.* imports. This pattern breaks if scripts are invoked from a different working directory, inside a subprocess, or after the repo is moved. It also bypasses package isolation.",
-      "suggestion": "Install the project as an editable package (pip install -e . with a minimal setup.py or pyproject.toml) and remove all sys.path manipulation. The SLURM scripts already activate a venv; the package install belongs in venv setup, not duplicated in every script."
-    },
-    {
-      "category": "consistency",
-      "severity": "warning",
-      "file": "src/data/synthetic.py",
-      "message": "The QualityFilter.accept() method returns bool, but the feature spec described returning a (bool, reason_str) tuple for rejection reasons. The implemented API is simpler but loses observability: callers cannot distinguish why an example was rejected (no_boxed vs. low_confidence vs. duplicate) without re-running the filter with instrumentation.",
-      "suggestion": "Consider returning a FilterResult named tuple or an enum-based rejection reason. At minimum, add a rejected_count_by_reason: dict[str, int] property to QualityFilter so callers can log filter statistics without re-implementing the logic."
+      "severity": "error",
+      "file": "scripts/hpc/submit_sft.sbatch",
+      "message": "resume_from_latest.py is called on '$RUN_DIR/checkpoints' (line 124) but run_sft.py is told --output-dir '$RUN_DIR' (line 131), so the Trainer writes checkpoints to $RUN_DIR/checkpoint-* while the resume scanner looks in $RUN_DIR/checkpoints/. If $CHECKPOINT_ROOT differs from $RUN_ROOT, $CHECKPOINT_DIR diverges further. The resume path is structurally guaranteed to find nothing on first invocation.",
+      "suggestion": "Pass a consistent checkpoint sub-directory to both run_sft.py (--output-dir \"$CHECKPOINT_DIR\") and resume_from_latest.py, or make resume_from_latest.py accept the same $RUN_DIR and scan one level down."
     },
     {
       "category": "pattern",
       "severity": "warning",
-      "file": "src/data/synthetic.py",
-      "message": "_make_provenance() does not populate solver_confidence by default. If QualityFilter is configured with solver_confidence_threshold > 0, any example whose provenance was built by _make_provenance() without an explicit extra={'solver_confidence': score} defaults to 0.0 and will be silently rejected. This implicit contract is not enforced or documented at the provenance construction site.",
-      "suggestion": "Add solver_confidence as an explicit optional parameter to _make_provenance (default None). When threshold filtering is active, examples without an explicit solver_confidence should either default to 1.0 (trust verifier-path examples) or raise, not silently default to 0.0."
+      "file": "scripts/hpc/run_sft.py",
+      "message": "_run_checkpoint_policy() is called inside run_sft.py at line 366 with --execute (always active), and submit_sft.sbatch Step 4 independently calls checkpoint_policy.py on $CHECKPOINT_DIR. These two calls target different directories ($RUN_DIR vs $CHECKPOINT_DIR) and both will silently find zero step-XXXXX dirs. The duplication obscures which layer owns checkpoint lifecycle management.",
+      "suggestion": "Remove the _run_checkpoint_policy() call from run_sft.py main() and let the orchestrating sbatch script own checkpoint lifecycle as a separate explicit step. A launcher should not call post-processing that the orchestrator also calls."
     },
     {
-      "category": "complexity",
-      "severity": "info",
-      "file": "src/data/synthetic.py",
-      "message": "generate_from_retry_candidates has three responsibilities: candidate iteration and teacher invocation, cost accounting, and quality filtering. Cost accounting uses a mutable accumulated_cost local variable that is reset on each call. If the caller wants to aggregate cost across multiple calls, they must instrument from outside.",
-      "suggestion": "Consider returning a GenerationResult dataclass that includes the filtered examples plus run statistics (total_candidates, cost_incurred_usd, rejection_counts). This separates reporting from filtering without adding a class, and gives callers cost visibility."
+      "category": "abstraction",
+      "severity": "warning",
+      "file": "scripts/hpc/run_sft.py",
+      "message": "PassthroughCollator pads input_ids with token ID 0 hardcoded (line 259) instead of the tokenizer's pad_token_id. The tokenizer is not injected into the collator. Padding with 0 is harmless when attention_mask correctly masks those positions, but it violates the principle of using the model's canonical pad token and can cause confusion if 0 happens to be a real vocab token.",
+      "suggestion": "Accept tokenizer (or just pad_token_id: int) as a constructor argument to PassthroughCollator and use it for input_ids padding."
+    },
+    {
+      "category": "consistency",
+      "severity": "warning",
+      "file": "configs/smoke_sft_local.yaml",
+      "message": "smoke_sft_local.yaml sets target_modules: [q_proj, k_proj, v_proj, o_proj] (attention heads, correct for Qwen2.5-0.5B-Instruct) while lora_baseline.yaml uses [in_proj, out_proj, up_proj, down_proj] (Mamba2 SSM modules for the actual competition model). The divergence is architecturally correct but undocumented inline; a reader may assume local smoke validates the same LoRA wiring as production.",
+      "suggestion": "Add a comment to smoke_sft_local.yaml: '# target_modules override for Qwen2.5 attention architecture; production uses in_proj/out_proj/up_proj/down_proj for Mamba2.'"
+    },
+    {
+      "category": "pattern",
+      "severity": "warning",
+      "file": "scripts/hpc/run_sft.py",
+      "message": "Both run_sft.py and tokenize_dataset.py mutate sys.path at module import time (sys.path.insert(0, str(_REPO_ROOT))). This is a side-effect that changes the import environment for all downstream code in the process and can cause hard-to-diagnose import shadowing if the repo root contains a module that conflicts with an installed package.",
+      "suggestion": "Use PYTHONPATH=$REPO_ROOT in the shell environment (set in submit_sft.sbatch or the venv activation) rather than mutating sys.path at import time."
+    },
+    {
+      "category": "abstraction",
+      "severity": "warning",
+      "file": "scripts/hpc/run_sft.py",
+      "message": "load_config() has no schema validation after resolving the extends: chain. Required keys (base_model, lora_r, target_modules) are accessed with cfg.get() with silent fallbacks, so a misconfigured or broken extends chain produces a confusing runtime error deep in model loading rather than a fast-fail at config parse time.",
+      "suggestion": "Add a lightweight validation step after load_config() that asserts required keys are present and non-empty before the expensive model download begins."
     },
     {
       "category": "scalability",
       "severity": "info",
-      "file": "scripts/hpc/tokenize_dataset.py",
-      "message": "_load_raw_rows reads the entire JSONL into memory before tokenization begins. For large datasets this may exceed per-node RAM on HPC clusters. The sharded output design already anticipates streaming, but the input loading does not.",
-      "suggestion": "Switch to a streaming generator that yields one row at a time, feeding directly into the tokenization+buffer loop. This keeps memory usage bounded to roughly one shard at a time regardless of input size."
+      "file": "scripts/hpc/run_sft.py",
+      "message": "ShardDataset loads all .pt shards fully into CPU memory in __init__ (self._examples is a flat Python list). For the current smoke scale (100-1000 examples) this is fine, but at full dataset scale the memory footprint could be significant before training even begins.",
+      "suggestion": "For future scale, consider lazy shard loading: hold a list of (shard_path, offset) pointers and load one shard at a time in __getitem__. This is a known-future-requirement, not a current blocker."
+    },
+    {
+      "category": "pattern",
+      "severity": "info",
+      "file": "scripts/hpc/run_sft.py",
+      "message": "torch.load(..., weights_only=False) at line 214 silences PyTorch's pickle-safety warning. In this closed pipeline (shards produced by the same repo) this is safe, but it disables the security guard that catches malicious .pt files if the data directory were ever populated from an external source.",
+      "suggestion": "Add an inline comment documenting the assumption: '# weights_only=False: shards are produced by this repo; safe to unpickle.' If the data directory is ever shared with external write access, switch to weights_only=True with appropriate safe_globals registration."
     }
   ],
   "recommendations": [
-    "Implement or remove the 'extends:' config inheritance in smoke_sft.yaml before any real training run — the smoke job currently silently uses a config with no base model, LoRA rank, or target modules set.",
-    "Audit the SFT example construction in _row_to_sft_example to confirm that EvalRecord.gold is the correct field for user message content; if it carries the expected answer rather than the problem text, fix the field mapping before any training data is generated.",
-    "Replace all sys.path.insert patterns in scripts/hpc/ with a pip install -e . in the venv setup step — the preflight.sh already checks src.training.sft_trainer importability, making package installation the cleanest fix.",
-    "Add structured rejection logging to QualityFilter so that HPC batch runs produce observable filter statistics (per-reason rejection counts) without requiring callers to re-implement filter logic.",
-    "Freeze SyntheticConfig (frozen=True) and use dataclasses.replace() in tests to enforce the project's immutability rule and make test intent visible at construction time."
+    "Fix the step-XXXXX vs checkpoint-XXXXX naming mismatch as the highest priority — checkpoint rotation and resume detection are both silently broken, meaning each job starts from scratch and disk accumulates unbounded checkpoints.",
+    "Consolidate checkpoint lifecycle ownership into submit_sft.sbatch exclusively; remove the _run_checkpoint_policy() call from run_sft.py to eliminate dual-invocation on mismatched directories.",
+    "Wire a consistent output directory through the whole sbatch pipeline: pass --output-dir \"$CHECKPOINT_DIR\" to run_sft.py and point resume_from_latest.py at the same directory so all three steps (train, resume, rotate) share one path.",
+    "Inject pad_token_id into PassthroughCollator at construction time rather than hardcoding 0, to make the collator's contract explicit and safe for any tokenizer.",
+    "Replace sys.path mutation in both launcher scripts with PYTHONPATH= in the sbatch environment; this is already the HPC convention and removes the import-shadowing risk.",
+    "Add a config schema validation step (required keys + type assertions) immediately after load_config() in run_sft.py so misconfiguration fails fast before the model download begins.",
+    "Add an inline comment to smoke_sft_local.yaml explaining the target_modules divergence from production to prevent a future reader from treating smoke success as proof that the Mamba2 LoRA wiring is correct."
   ]
 }

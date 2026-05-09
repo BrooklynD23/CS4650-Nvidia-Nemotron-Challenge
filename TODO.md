@@ -454,7 +454,7 @@ Owner lane: training
   - `scripts/hpc/checkpoint_policy.py` — sidecar files + keep-last-3-plus-best rotation
   - `scripts/hpc/regression_gate.py` — wraps `src.evaluation.golden_gate.run_gate()`; exit 0/1
   - `scripts/hpc/package_adapter.py` — wraps `src.inference.submission`
-  - `scripts/hpc/resume_from_latest.py` — prints highest-step checkpoint path
+  - `scripts/hpc/resume_from_latest.py` — prints highest-numbered checkpoint-XXXXX path
 - [x] Add training configs only when they use the verified `#14` base model and
   adapter constraints.
   Done: `configs/lora_baseline.yaml` (r=32), `configs/lora_qlora.yaml` (r=16, 4-bit), `configs/smoke_sft.yaml` (100-step).

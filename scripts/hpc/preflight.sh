@@ -89,6 +89,12 @@ fi
 info "Checking frozen contract vars..."
 
 if [[ $LOCAL -eq 1 ]]; then
+  export LORA_RANK="${LORA_RANK:-8}"
+  export LORA_TARGET_MODULES="${LORA_TARGET_MODULES:-q_proj,k_proj,v_proj,o_proj}"
+  export NORMALIZER_ID="${NORMALIZER_ID:-${FROZEN_NORMALIZER_ID}}"
+fi
+
+if [[ $LOCAL -eq 1 ]]; then
   info "LOCAL mode: skipping frozen BASE_MODEL_ID check (got '${BASE_MODEL_ID:-<unset>}')"
 elif [[ -z "${BASE_MODEL_ID:-}" ]]; then
   fail "BASE_MODEL_ID is not set"

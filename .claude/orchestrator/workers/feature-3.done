@@ -1,24 +1,10 @@
-## feature-3: Training Config YAMLs (T2-A)
+T1.2 complete: wired scripts/hpc/submit_sft.sbatch to scripts/hpc/run_sft.py.
 
-### Implemented
-Created three LoRA training config YAML files in configs/:
+Changes made:
+- Replaced Python heredoc stub (lines 122-162) with RESUME_ARG detection via resume_from_latest.py
+- Added `python scripts/hpc/run_sft.py --config ... --data-dir ... --output-dir ... $RESUME_ARG 2>&1 | tee -a $RUN_DIR/train.log`
+- Added RUN_DIR="${RUN_ROOT}/${RUN_TAG}" to the run-directories section
+- Removed 'stub' language from Step 3 comment header
+- Kept all surrounding env-var setup, log headers, and exit-code handling (Steps 1, 2, 4)
 
-1. **configs/lora_baseline.yaml** — Full-precision LoRA baseline
-   - base_model: metric/nemotron-3-nano-30b-a3b-bf16/transformers/default
-   - lora_r: 32 (at evaluator max_lora_rank cap), lora_alpha: 64, lora_dropout: 0.05
-   - target_modules: [in_proj, out_proj, up_proj, down_proj] (from competition demo)
-   - load_in_4bit: false, torch_dtype: bfloat16, trust_remote_code: true
-
-2. **configs/lora_qlora.yaml** — QLoRA 4-bit quantized variant
-   - Same as baseline but load_in_4bit: true and lora_r: 16
-
-3. **configs/smoke_sft.yaml** — Smoke-run config (extends lora_baseline.yaml)
-   - max_steps: 100, per_device_train_batch_size: 1, dataset_max_rows: 1000
-   - save_steps: 50, gradient_accumulation_steps: 4
-
-### Verification
-- All constraints cross-checked against docs/architecture/COMPETITION.md (freeze snapshot 2026-04-29) and docs/execution/plans/issue-25-hpc-queue-runbook.md
-- 241 tests passed (21 + 220), 1 skipped, 0 failures
-
-### Commit
-773f994 feat(configs): add LoRA training config YAMLs for SFT pipeline
+Commit: feat(hpc): wire submit_sft.sbatch to run_sft.py, remove stub

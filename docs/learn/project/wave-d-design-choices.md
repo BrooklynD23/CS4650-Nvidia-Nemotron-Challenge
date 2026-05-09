@@ -1,4 +1,26 @@
+---
+title: Wave D Design Choices Retrospective
+audience: beginner
+page_type: concept
+status: implemented
+last_reviewed: 2026-05-08
+repo_sources:
+  - docs/execution/plans/issue-25-hpc-queue-runbook.md
+  - docs/execution/plans/sprint-parallel-execution.md
+  - docs/learn/project/implemented-today.md
+  - scripts/hpc/checkpoint_policy.py
+  - scripts/hpc/resume_from_latest.py
+  - scripts/hpc/run_sft.py
+  - scripts/hpc/submit_sft.sbatch
+  - src/training/sft_trainer.py
+external_sources:
+  - https://huggingface.co/papers/2106.09685
+  - https://huggingface.co/papers/2312.00752
+---
+
 # Wave D — Design Choices Retrospective
+
+## Why This Page Exists
 
 Consolidated rationale for key implementation decisions made during Wave D
 (SFT/RL pipeline scaffolding). Intended as a permanent reference for future
@@ -120,13 +142,13 @@ _KEEP_LAST_N = 3
 
 ### Policy rules
 
-1. **Scan** `--checkpoint-dir` for subdirectories matching `step-\d+`.
-2. **Sort** by step number ascending.
-3. **Keep** the three most recent step directories.
+1. **Scan** `--checkpoint-dir` for subdirectories matching `checkpoint-\d+`.
+2. **Sort** by checkpoint number ascending.
+3. **Keep** the three most recent `checkpoint-XXXXX/` directories.
 4. **Keep** the `best/` directory unconditionally (best validation-metric
    checkpoint regardless of recency).
-5. **Delete** all older step directories (`--execute` required; default is
-   dry-run to prevent accidents).
+5. **Delete** all older `checkpoint-XXXXX/` directories (`--execute` required;
+   default is dry-run to prevent accidents).
 
 ### Sidecar files written per checkpoint
 
@@ -142,11 +164,27 @@ Each surviving checkpoint receives the following if absent:
 
 ### Rationale
 
-- 3 recent steps covers the typical debugging window: one step back diagnoses
+- 3 recent checkpoints covers the typical debugging window: one checkpoint back diagnoses
   divergence, two gives a trend.
 - `best/` is always kept because it is the model shipped downstream; losing
   it is unrecoverable without rerunning training.
 - Dry-run default prevents accidental deletion in development.
+- The current wrapper writes checkpoints under `CHECKPOINT_DIR` and applies
+  this rotation once after training, so the SLURM layer does not duplicate the
+  policy call.
+
+## Sources
+
+- Repo: [docs/execution/plans/issue-25-hpc-queue-runbook.md](../../execution/plans/issue-25-hpc-queue-runbook.md)
+- Repo: [docs/execution/plans/sprint-parallel-execution.md](../../execution/plans/sprint-parallel-execution.md)
+- Repo: [docs/learn/project/implemented-today.md](implemented-today.md)
+- Repo: [scripts/hpc/checkpoint_policy.py](../../../scripts/hpc/checkpoint_policy.py)
+- Repo: [scripts/hpc/resume_from_latest.py](../../../scripts/hpc/resume_from_latest.py)
+- Repo: [scripts/hpc/run_sft.py](../../../scripts/hpc/run_sft.py)
+- Repo: [scripts/hpc/submit_sft.sbatch](../../../scripts/hpc/submit_sft.sbatch)
+- Repo: [src/training/sft_trainer.py](../../../src/training/sft_trainer.py)
+- External: https://huggingface.co/papers/2106.09685
+- External: https://huggingface.co/papers/2312.00752
 
 ---
 

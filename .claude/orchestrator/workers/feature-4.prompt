@@ -1,10 +1,10 @@
 You are a worker agent focused on implementing a single feature.
 
 ## Your Task
-T2-B: Implement src/training/sft_trainer.py (new file, ~80 lines) with function apply_loss_mask(input_ids: list[int], labels: list[int], tokenizer, mask_role: str = 'user') -> list[int] that sets prompt/user/system turn token labels to -100 and leaves assistant turn labels unchanged. Must use type annotations, handle edge case where no assistant turn exists (raise ValueError). Also create src/training/__init__.py. Then create tests/training/__init__.py and tests/training/test_masking.py with 4 tests: test_user_tokens_masked (all user turn tokens have label -100), test_assistant_tokens_unmasked (assistant labels equal input_ids), test_system_tokens_masked (system tokens get -100), test_all_masked_raises (ValueError when no assistant turn). Use a minimal mock tokenizer that returns predictable token boundaries.
+T1.3: Create configs/smoke_sft_local.yaml extending configs/smoke_sft.yaml with overrides: base_model: Qwen/Qwen2.5-0.5B-Instruct, lora_r: 8, lora_alpha: 16, target_modules: [q_proj, k_proj, v_proj, o_proj], dataset_max_rows: 100, max_steps: 20, save_steps: 10, header comment 'LOCAL SMOKE ONLY — NOT FOR SUBMISSION'. Also edit scripts/hpc/preflight.sh to add --local flag that skips frozen BASE_MODEL_ID check and model-weights-path check while still running CUDA/disk/package/dataset SHA256 checks.
 
 ## Orchestration Context
-Close the remaining implementation gaps identified in issues #10/#24 (synthetic data) and #11/#25 (SFT training pipeline) so the project can start fine-tuning. The approved plan is at /home/danny/.claude/plans/elegant-floating-russell.md. Key constraint: base model is metric/nemotron-3-nano-30b-a3b-bf16/transformers/default, lora_r <= 32, answers use \boxed{} format, SFTExample schema is frozen in src/contracts.py:97.
+Sprint: Parallel Execution — implement the plan at docs/execution/plans/sprint-parallel-execution.md. Two parallel tracks: Track 1 (training pipeline) and Track 2 (data/eval/notebooks). Current branch: main (sprint branch to be created). Key missing deliverables: scripts/hpc/run_sft.py (the SFT training launcher replacing the stub in submit_sft.sbatch), configs/smoke_sft_local.yaml, preflight.sh --local flag, and notebook 09 fill. Pre-work also needed: wave-d retrospective doc and branch creation.
 
 ## Project Context Files
 ### From CLAUDE.md:
@@ -40,10 +40,6 @@ Route your task to the right docs. Keep context minimal — open only what your 
      * Use: feat(scope), fix(scope), docs(scope), refactor(scope), test(scope)
      * Example: "feat(auth): add user authentication system"
      * Add footer: "🤖 Committed by claude-swarm worker feature-4"
-   - Run the following verification commands and ensure they pass:
-     * `pytest tests/data/test_synthetic.py tests/data/test_gan_refine.py -v --tb=short`
-     * `pytest tests/ -v --tb=short --ignore=tests/data/test_synthetic.py --ignore=tests/data/test_gan_refine.py -q`
-     * If any verification command fails, fix the issue before proceeding
    - Create a file at: .claude/orchestrator/workers/feature-4.done
      with a brief summary of what you implemented
 
@@ -65,6 +61,36 @@ git commit -m "feat(feature-name): implement the feature" -m "🤖 Committed by 
 
 
 ## Additional Context
-Create src/training/__init__.py (empty), src/training/sft_trainer.py (~80 lines), tests/training/__init__.py (empty), and tests/training/test_masking.py. The apply_loss_mask function takes input_ids and labels lists plus a tokenizer object. For token boundary detection: the function should work with a simple approach — find positions of role separator tokens (e.g. system/user/assistant markers) in input_ids. Since we do not have a real tokenizer at test time, design it so the tokenizer object just needs an encode() method and a chat_template_roles property or similar minimal interface. Use a mock tokenizer in tests that gives predictable turn boundaries. Run pytest tests/training/test_masking.py after creating.
+T1.3: Two tasks — create configs/smoke_sft_local.yaml and add --local flag to scripts/hpc/preflight.sh.
+
+Task A — Create configs/smoke_sft_local.yaml:
+Read configs/smoke_sft.yaml first to understand the extends: format.
+Create configs/smoke_sft_local.yaml with:
+```yaml
+# LOCAL SMOKE ONLY — NOT FOR SUBMISSION. Validates pipeline plumbing; uses non-frozen base model.
+extends: configs/smoke_sft.yaml
+base_model: Qwen/Qwen2.5-0.5B-Instruct
+lora_r: 8
+lora_alpha: 16
+target_modules:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+dataset_max_rows: 100
+max_steps: 20
+save_steps: 10
+```
+
+Task B — Edit scripts/hpc/preflight.sh to add --local flag:
+Read the current preflight.sh to understand its structure.
+Add a --local flag (parse from $@ using getopts or a simple loop).
+When --local is passed:
+  - Skip the BASE_MODEL_ID equality check (frozen model ID check)
+  - Skip the model weights path check (model pre-staged check)
+  - Still run: CUDA availability, disk space, package importability, dataset SHA256 checks
+Default behavior (no --local) must be completely unchanged.
+
+Commit both: git add configs/smoke_sft_local.yaml scripts/hpc/preflight.sh && git commit -m 'feat(hpc): add smoke_sft_local.yaml and preflight --local flag'
 
 Begin implementing the feature now.

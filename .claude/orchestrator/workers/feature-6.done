@@ -1,30 +1,48 @@
-## Feature 6: scripts/hpc/ — 8 HPC runbook scripts
+# Feature 6 (T2.5) — Synthetic Data Smoke Run
 
-### Status: COMPLETE
-### Commit: 801e309
+## Status: DONE
 
-### What was implemented
+## What was implemented
 
-Created scripts/hpc/ with all 8 scripts from issue-25-hpc-queue-runbook.md:
+### src/data/synthetic.py — CLI wiring
+- Added `EvalRecord` and `ErrorType` imports (needed for candidate loading)
+- Added `_load_retry_candidates(path)` helper: reads TrajectoryRow objects from
+  a JSONL file; returns empty list with informative message if file absent
+- Replaced stub `_main()` with a working CLI that:
+  - Accepts `--candidates` (default: data/analysis/retry_candidates.jsonl)
+  - Accepts `--output` (default: data/processed/synthetic_train.jsonl)
+  - Loads candidates with empty-list fallback
+  - Calls `generate_from_retry_candidates()` with smoke/dry-run flags
+  - Writes JSONL + SHA-256 fingerprint on non-dry-run runs
 
-1. preflight.sh — frozen #14 contract gate, CUDA, weights path, SHA256 dataset
-   validation, disk space >50 GB, Python package imports; --show / --write-config modes
-2. tokenize_dataset.py — SFTExample JSONL → .pt shards via chat template +
-   apply_loss_mask(); writes dataset_fingerprint.json; args: --input/--output/--config
-3. submit_sft.sbatch — SLURM (4 GPU, 64 GB, 24 h); preflight → tokenize → SFT stub →
-   checkpoint_policy
-4. submit_rl.sbatch — same SLURM shape; ALLOW_RL=1 opt-in; verifies SFT best/ before RL
-5. checkpoint_policy.py — writes sidecar files (trainer_state.json, run_config.json,
-   metrics.jsonl, git_sha.txt, dataset_fingerprint.txt); keep-last-3-plus-best rotation
-6. regression_gate.py — EvalRecord + SplitArtifactRow JSONL → evaluate_golden_gate() →
-   exit 0/1; args: --eval-records/--golden
-7. package_adapter.py — thin wrapper around src.inference.submission.build_submission;
-   args: --adapter-dir/--output-dir/--base-model-id/--adapter-rank
-8. resume_from_latest.py — scans step-XXXXX dirs, prints highest-step absolute path;
-   args: --checkpoint-dir OR --run-tag
+### docs/execution/NOTEBOOKS.md — notebook 08 row updated
+- Added T2.5 smoke run note: dry-run OK, smoke write OK, absent
+  retry_candidates.jsonl is expected (dependency on #22 / notebook 06)
 
-All scripts have --help, shebang lines, type annotations (Python), and are executable.
+## Commands run and output
 
-### Verification
-- pytest tests/data/test_synthetic.py tests/data/test_gan_refine.py: 24 passed
-- pytest tests/ (remaining): 224 passed, 1 skipped
+```
+$ python3 -m src.data.synthetic --smoke --dry-run
+[synthetic] smoke=True, dry_run=True
+[synthetic] output=data/processed/synthetic_train.jsonl
+[synthetic] data/analysis/retry_candidates.jsonl not found — using empty candidate list
+[dry-run] examples to generate: 0
+[dry-run] estimated tokens: 0
+[dry-run] estimated cost: $0.0000
+
+$ python3 -m src.data.synthetic --smoke
+[synthetic] smoke=True, dry_run=False
+[synthetic] output=data/processed/synthetic_train.jsonl
+[synthetic] data/analysis/retry_candidates.jsonl not found — using empty candidate list
+[synthetic] wrote 0 examples -> data/processed/synthetic_train.jsonl
+[synthetic] fingerprint -> data/processed/synthetic_train.sha256
+```
+
+## Files produced
+- data/processed/synthetic_train.jsonl (empty, 0 bytes)
+- data/processed/synthetic_train.sha256 (SHA-256 of empty file)
+
+## Blockers / Notes
+- data/analysis/retry_candidates.jsonl absent as expected (#22/notebook 06 not yet built)
+- No LLM API credentials needed; no teacher calls made with empty candidate list
+- Real 50-row smoke generation requires retry_candidates.jsonl to exist first

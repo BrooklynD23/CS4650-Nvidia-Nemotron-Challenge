@@ -1,32 +1,17 @@
-## Feature T1-AB: Completed
+## feature-1 (pre-work) — DONE
 
-### What was implemented
+### Completed
+- Created local branch sprint/parallel-execution (git checkout -b)
+- Wrote docs/learn/project/wave-d-design-choices.md (~235 lines) covering:
+  - lora_r=32 rationale and lora_alpha=64 2x scaling rule
+  - target_modules choice (in_proj/out_proj/up_proj/down_proj) and Mamba2 rationale
+  - apply_loss_mask API contract: inputs, output, what gets masked, IGNORE_INDEX=-100, ValueError guard, immutability guarantee
+  - Keep-last-3-plus-best checkpoint rotation policy and sidecar files
+  - QualityFilter solver_confidence_threshold gate (default 0.0=disabled, safe-by-default absent=0.0)
+  - smoke=50/_SMOKE_LIMIT and cost_cap_usd=$20 limits and --dry-run interaction
+- Discarded CRLF drift in feature-*.prompt files via git checkout
+- Committed: e62e6cf
 
-1. `import yaml` added to `src/data/synthetic.py` (PyYAML 6.0.1 confirmed available).
-
-2. `SyntheticConfig` dataclass gained two new optional fields:
-   - `prompt_config_path: Path | None = None` — path to configs/synthetic_prompts.yaml
-   - `solver_confidence_threshold: float = 0.0` — 0.0 disables the gate
-
-3. `_load_prompt_templates(config)` helper added — loads `templates` dict from YAML via `yaml.safe_load` when `prompt_config_path` is set.
-
-4. `generate_from_retry_candidates()` updated:
-   - Accepts optional `prompt_templates` parameter (loaded from YAML if not provided)
-   - Dry-run token estimates now use per-category `dry_run_token_estimate` from YAML, falling back to `len(gold)//4+200`
-   - LLM teacher prompt built from `template['system'] + problem_formulation` per category
-
-5. `QualityFilter.accept()` — solver_confidence gate added after provenance check:
-   - Only active when `solver_confidence_threshold > 0`
-   - Reads `ex.provenance.get('solver_confidence', 0.0)` and rejects if below threshold
-
-6. Tests added to `tests/data/test_synthetic.py`:
-   - `test_solver_confidence_threshold_rejects_low_confidence`
-   - `test_solver_confidence_threshold_accepts_high_confidence`
-   - `test_solver_confidence_threshold_disabled_by_default`
-
-### Verification
-- `pytest tests/data/test_synthetic.py tests/data/test_gan_refine.py`: 24/24 passed
-- `pytest tests/ --ignore=...`: 220 passed, 1 skipped
-
-### Commit
-`66d1602` feat(synthetic): integrate prompt YAML config and solver-confidence gate
+### Blocker
+- git push -u origin sprint/parallel-execution failed: remote auth token expired.
+  Branch exists locally; re-push manually once credentials are refreshed.

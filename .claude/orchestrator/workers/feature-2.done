@@ -1,17 +1,49 @@
-## Feature T1-D: SYNTHETIC_PROVENANCE.md
+## Feature-2 Complete: scripts/hpc/run_sft.py
 
 ### What was implemented
-Created `docs/architecture/SYNTHETIC_PROVENANCE.md` (~80 lines) documenting:
-1. Artifact layout: `data/synthetic/<run_id>.jsonl` + `.sha256` sidecar, with run_id format `YYYYMMDD_8hexchars`
-2. Provenance dict schema: 4 fields (`teacher`, `generated_at`, `source_run_id`, `solver_confidence`) with types, example values, and descriptions
-3. Fingerprint algorithm: `hashlib.sha256` over raw `.jsonl` bytes, written as sidecar immediately post-run
-4. Step-by-step re-verification: locate pair → recompute digest → diff against sidecar → validate provenance fields → check `\boxed{}` format
 
-Also updated `docs/architecture/README.md` to list `SOLVER_DESIGN.md` and `SYNTHETIC_PROVENANCE.md` in the Files index.
+Created `scripts/hpc/run_sft.py` (~376 lines), the SFT training launcher that replaces
+the inline Python stub in `submit_sft.sbatch`.
 
-### Verification
-- `pytest tests/data/test_synthetic.py tests/data/test_gan_refine.py`: 21/21 passed
-- `pytest tests/ (remaining)`: 220 passed, 1 skipped
+### Key design decisions
+
+1. **Config chain resolution** (`load_config`): reads `extends:` key from child YAML,
+   loads parent recursively, deep-merges child on top (child values win). Paths resolved
+   relative to repo root.
+
+2. **Model loading** (`_load_model_and_tokenizer`): `AutoModelForCausalLM.from_pretrained`
+   with `trust_remote_code=True`, `torch_dtype=bfloat16`, `device_map='auto'`. When
+   `load_in_4bit: true` in config, uses `BitsAndBytesConfig` (nf4, double-quant) for QLoRA
+   and calls `prepare_model_for_kbit_training`.
+
+3. **LoRA** (`_apply_lora`): `peft.LoraConfig` with `r`, `lora_alpha`, `lora_dropout`,
+   `target_modules`, `task_type='CAUSAL_LM'`. Applied via `get_peft_model`.
+
+4. **ShardDataset**: loads all `.pt` files from `--data-dir` (sorted), flattens into a
+   single list of `{input_ids, labels}` dicts. Labels are already masked by
+   `tokenize_dataset.py` — no re-masking.
+
+5. **PassthroughCollator**: pads sequences to batch max-length (labels padded with -100,
+   attention_mask=0 for pad positions). Asserts `(batch['labels'] == -100).any()` to
+   confirm pre-masking.
+
+6. **TrainingArguments**: derives `max_steps`, `per_device_train_batch_size`,
+   `gradient_accumulation_steps`, `save_steps`, `bf16=True` from config.
+   `report_to='wandb'` only when `WANDB_API_KEY` env var is set.
+
+7. **SFTTrainer**: called with `model`, `args`, `train_dataset`, `data_collator` only.
+   No `formatting_func` or `dataset_text_field`.
+
+8. **Resume**: `--resume-from-checkpoint` accepts a path or `'true'` (maps to Python `True`
+   for Trainer auto-detect). Passed directly to `trainer.train()`.
+
+9. **Post-training**: calls `checkpoint_policy.main(['--checkpoint-dir', ..., '--execute'])`.
+
+10. **Exit codes**: `sys.exit(0)` on success; catches all exceptions, prints traceback to
+    stderr, `sys.exit(1)`.
+
+### Files changed
+- `scripts/hpc/run_sft.py` (created, 376 lines)
 
 ### Commit
-31c25a5 docs(synthetic): add SYNTHETIC_PROVENANCE.md with artifact layout, provenance schema, and re-verification steps
+`924d4f8 feat(training): implement SFT training launcher scripts/hpc/run_sft.py`

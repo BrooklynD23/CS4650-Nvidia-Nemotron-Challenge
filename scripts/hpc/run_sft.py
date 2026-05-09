@@ -20,14 +20,12 @@ from __future__ import annotations
 import argparse
 import logging
 import os
-import sys
+import subprocess
 import traceback
 from pathlib import Path
 from typing import Any
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-if str(_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT))
 
 logging.basicConfig(
     level=logging.INFO,
@@ -119,6 +117,47 @@ def load_config(config_path: Path) -> dict[str, Any]:
     return _deep_merge(parent_cfg, raw)
 
 
+def validate_config(cfg: dict[str, Any]) -> None:
+    """Fail fast on config mistakes before model/tokenizer download starts."""
+    if not (cfg.get("base_model") or cfg.get("model_name_or_path")):
+        raise ValueError("Config must specify 'base_model' or 'model_name_or_path'.")
+
+    int_keys = (
+        "lora_r",
+        "lora_alpha",
+        "per_device_train_batch_size",
+        "gradient_accumulation_steps",
+        "save_steps",
+        "max_steps",
+        "warmup_steps",
+        "logging_steps",
+        "eval_steps",
+        "dataset_max_rows",
+    )
+    for key in int_keys:
+        if key in cfg:
+            try:
+                value = int(cfg[key])
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"Config key '{key}' must be an integer.") from exc
+            if value <= 0:
+                raise ValueError(f"Config key '{key}' must be > 0.")
+
+    for key in ("lora_dropout", "learning_rate", "weight_decay", "max_grad_norm"):
+        if key in cfg:
+            try:
+                float(cfg[key])
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"Config key '{key}' must be numeric.") from exc
+
+    target_modules = cfg.get("target_modules")
+    if target_modules is not None:
+        if not isinstance(target_modules, list) or not all(
+            isinstance(item, str) and item for item in target_modules
+        ):
+            raise ValueError("Config key 'target_modules' must be a list of strings.")
+
+
 # ---------------------------------------------------------------------------
 # Model + tokenizer
 # ---------------------------------------------------------------------------
@@ -129,8 +168,6 @@ def _load_model_and_tokenizer(cfg: dict[str, Any]) -> tuple[Any, Any]:
     from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig  # type: ignore[import]
 
     model_id: str = cfg.get("base_model") or cfg.get("model_name_or_path", "")
-    if not model_id:
-        raise ValueError("Config must specify 'base_model' or 'model_name_or_path'.")
 
     log.info("Loading tokenizer: %s", model_id)
     tokenizer = AutoTokenizer.from_pretrained(
@@ -201,7 +238,7 @@ class ShardDataset:
     Labels have already been masked by apply_loss_mask during tokenization.
     """
 
-    def __init__(self, data_dir: Path) -> None:
+    def __init__(self, data_dir: Path, max_rows: int | None = None) -> None:
         import torch  # type: ignore[import]
 
         shard_files = sorted(data_dir.glob("*.pt"))
@@ -214,7 +251,14 @@ class ShardDataset:
             shard: list[dict[str, list[int]]] = torch.load(
                 shard_path, weights_only=False
             )
-            self._examples.extend(shard)
+            if max_rows is None:
+                self._examples.extend(shard)
+                continue
+
+            remaining = max_rows - len(self._examples)
+            if remaining <= 0:
+                break
+            self._examples.extend(shard[:remaining])
 
         log.info("Total examples: %d", len(self._examples))
 
@@ -241,6 +285,9 @@ class PassthroughCollator:
     confirming that apply_loss_mask was already applied during tokenization.
     """
 
+    def __init__(self, pad_token_id: int) -> None:
+        self.pad_token_id = pad_token_id
+
     def __call__(
         self, features: list[dict[str, list[int]]]
     ) -> dict[str, Any]:
@@ -255,7 +302,7 @@ class PassthroughCollator:
         for f in features:
             seq_len = len(f["input_ids"])
             pad_len = max_len - seq_len
-            padded_input_ids.append(f["input_ids"] + [0] * pad_len)
+            padded_input_ids.append(f["input_ids"] + [self.pad_token_id] * pad_len)
             padded_labels.append(f["labels"] + [IGNORE_INDEX] * pad_len)
             attention_masks.append([1] * seq_len + [0] * pad_len)
 
@@ -314,12 +361,19 @@ def _build_training_args(cfg: dict[str, Any], output_dir: Path) -> Any:
 
 
 def _run_checkpoint_policy(output_dir: Path) -> None:
-    from scripts.hpc.checkpoint_policy import main as policy_main  # type: ignore[import]
-
     log.info("Running checkpoint rotation policy on: %s", output_dir)
-    rc = policy_main(["--checkpoint-dir", str(output_dir), "--execute"])
-    if rc != 0:
-        log.warning("Checkpoint policy exited with non-zero code: %d", rc)
+    cmd = [
+        "python3",
+        str(_REPO_ROOT / "scripts" / "hpc" / "checkpoint_policy.py"),
+        "--checkpoint-dir",
+        str(output_dir),
+        "--run-config",
+        str(output_dir / "run_config.json"),
+        "--execute",
+    ]
+    result = subprocess.run(cmd, check=False)
+    if result.returncode != 0:
+        log.warning("Checkpoint policy exited with non-zero code: %d", result.returncode)
 
 
 # ---------------------------------------------------------------------------
@@ -333,15 +387,22 @@ def main(argv: list[str] | None = None) -> int:
     try:
         log.info("Resolving config: %s", args.config)
         cfg = load_config(args.config)
+        validate_config(cfg)
         log.info("Effective config: %s", cfg)
 
         args.output_dir.mkdir(parents=True, exist_ok=True)
 
-        model, _tokenizer = _load_model_and_tokenizer(cfg)
+        model, tokenizer = _load_model_and_tokenizer(cfg)
         model = _apply_lora(model, cfg)
 
-        dataset = ShardDataset(args.data_dir)
-        collator = PassthroughCollator()
+        max_rows = (
+            int(cfg["dataset_max_rows"]) if "dataset_max_rows" in cfg else None
+        )
+        dataset = ShardDataset(args.data_dir, max_rows=max_rows)
+        pad_token_id = tokenizer.pad_token_id
+        if pad_token_id is None:
+            raise ValueError("Tokenizer must expose pad_token_id after pad-token setup.")
+        collator = PassthroughCollator(pad_token_id=int(pad_token_id))
         training_args = _build_training_args(cfg, args.output_dir)
 
         from trl import SFTTrainer  # type: ignore[import]

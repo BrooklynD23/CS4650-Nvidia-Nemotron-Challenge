@@ -366,7 +366,7 @@ python scripts/hpc/regression_gate.py \
 | Roots | `DATA_ROOT`, `RUN_ROOT`, `CHECKPOINT_ROOT`, `ARTIFACT_ROOT`, `LOG_ROOT`, `HF_HOME`, `TRANSFORMERS_CACHE`, `WANDB_DIR`, `TMPDIR` |
 | Eval | `NORMALIZER_ID`, `GOLDEN_SET_PATH`, `VALIDATION_SET_PATH`, `RUN_TAG` |
 
-Storage convention: raw data stays under `${DATA_ROOT}/raw/`, tokenized caches under `${DATA_ROOT}/processed/`, checkpoints under `${RUN_ROOT}/${RUN_TAG}/checkpoints/`, eval artifacts under `${RUN_ROOT}/${RUN_TAG}/eval/`, and the final adapter mirror under `adapters/issue-25/${RUN_TAG}/`.
+Storage convention: raw data stays under `${DATA_ROOT}/raw/`, tokenized caches under `${DATA_ROOT}/processed/`, checkpoints under `${RUN_ROOT}/${RUN_TAG}/checkpoints/checkpoint-XXXXX/`, eval artifacts under `${RUN_ROOT}/${RUN_TAG}/eval/`, and the final adapter mirror under `adapters/issue-25/${RUN_TAG}/`.
 
 ### Explicit gates
 
