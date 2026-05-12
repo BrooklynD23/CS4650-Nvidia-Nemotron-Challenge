@@ -1,0 +1,11 @@
+{
+  "run_id": "baseline-real-v1",
+  "model_id": "metric/nemotron-3-nano-30b-a3b-bf16/transformers/default",
+  "normalizer_id": "boxed_extract_v1",
+  "total": 200,
+  "correct": 0,
+  "accuracy": 0.0,
+  "dataset_version": "kaggle-v1",
+  "seed": 42,
+  "notes": "Model reasons correctly but does not output boxed{} format without explicit prompting. extract_boxed falls back to last line of reasoning trace. Confirms PENDING_REVIEW.md output parser discrepancy."
+}
