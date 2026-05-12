@@ -2,7 +2,7 @@
 """Checkpoint rotation and sidecar-file policy for the Nemotron pipeline.
 
 Enforces the keep-last-3-plus-best policy defined in the HPC runbook:
-  - Scans ``--checkpoint-dir`` for step-XXXXX/ subdirectories.
+  - Scans ``--checkpoint-dir`` for checkpoint-XXXXX/ subdirectories.
   - Keeps the three most recent steps plus the ``best/`` dir.
   - Deletes older step dirs (dry-run by default; pass --execute to delete).
   - Writes required sidecar files next to any checkpoint that lacks them.
@@ -42,7 +42,7 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-_STEP_RE = re.compile(r"^step-(\d+)$")
+_STEP_RE = re.compile(r"^checkpoint-(\d+)$")
 _KEEP_LAST_N = 3
 
 
@@ -54,7 +54,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--checkpoint-dir",
         type=Path,
         required=True,
-        help="Directory containing step-XXXXX/ checkpoint subdirs.",
+        help="Directory containing checkpoint-XXXXX/ checkpoint subdirs.",
     )
     parser.add_argument(
         "--run-config",

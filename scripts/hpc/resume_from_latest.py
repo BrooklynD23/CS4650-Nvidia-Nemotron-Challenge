@@ -29,13 +29,13 @@ import re
 import sys
 from pathlib import Path
 
-_STEP_RE = re.compile(r"^step-(\d+)$")
+_STEP_RE = re.compile(r"^checkpoint-(\d+)$")
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Print the absolute path of the latest step-XXXXX checkpoint to stdout. "
+            "Print the absolute path of the latest checkpoint-XXXXX checkpoint to stdout. "
             "Intended for shell capture to set --resume_from_checkpoint."
         ),
     )
@@ -43,7 +43,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     group.add_argument(
         "--checkpoint-dir",
         type=Path,
-        help="Directory containing step-XXXXX/ checkpoint subdirs.",
+        help="Directory containing checkpoint-XXXXX/ checkpoint subdirs.",
     )
     group.add_argument(
         "--run-tag",
@@ -71,7 +71,7 @@ def _resolve_checkpoint_dir(args: argparse.Namespace) -> Path:
 
 
 def _find_latest(checkpoint_dir: Path) -> Path | None:
-    """Return the step-XXXXX subdir with the highest step number, or None."""
+    """Return the checkpoint-XXXXX subdir with the highest step number, or None."""
     if not checkpoint_dir.is_dir():
         return None
 
@@ -103,7 +103,7 @@ def main(argv: list[str] | None = None) -> int:
     latest = _find_latest(checkpoint_dir)
     if latest is None:
         print(
-            f"ERROR: No step-XXXXX checkpoints found in {checkpoint_dir}",
+            f"ERROR: No checkpoint-XXXXX checkpoints found in {checkpoint_dir}",
             file=sys.stderr,
         )
         return 1

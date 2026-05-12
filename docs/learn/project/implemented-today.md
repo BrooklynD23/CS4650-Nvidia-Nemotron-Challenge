@@ -46,8 +46,10 @@ work in six broad areas:
   cost caps, and SHA-256 fingerprinting (`src/data/synthetic.py` with config
   integration via `configs/synthetic_prompts.yaml`)
 - training infrastructure and masking for SFT (`src/training/sft_trainer.py` with
-  `apply_loss_mask()` function, plus training config files: `configs/lora_baseline.yaml`,
-  `configs/lora_qlora.yaml`, `configs/smoke_sft.yaml`)
+  `apply_loss_mask()` function, `dataset_max_rows` enforcement, and
+  `PassthroughCollator` padding from `tokenizer.pad_token_id`, plus training
+  config files: `configs/lora_baseline.yaml`, `configs/lora_qlora.yaml`,
+  `configs/smoke_sft.yaml`)
 - HPC queue submission and checkpoint management scripts
   (`scripts/hpc/` directory with 8 production scripts for preflight validation,
   dataset tokenization, SFT/RL submission, checkpoint policy, regression gating,
@@ -94,7 +96,9 @@ for HPC execution.
   filters with `solver_confidence_threshold` gate. Tests are in
   `tests/data/test_synthetic.py`.
 - `src/training/sft_trainer.py` introduces the `apply_loss_mask()` function for
-  completion-only masking during SFT. Training config files exist at
+  completion-only masking during SFT. The training entrypoint now validates the
+  config before loading model weights, respects `dataset_max_rows`, and pads
+  batches from `tokenizer.pad_token_id`. Training config files exist at
   `configs/lora_baseline.yaml` (r=32), `configs/lora_qlora.yaml` (r=16 QLoRA),
   and `configs/smoke_sft.yaml` (100-step smoke test). Tests are in
   `tests/training/test_masking.py` with 4 masking test cases.
@@ -107,7 +111,8 @@ for HPC execution.
   (validation), `tokenize_dataset.py` (dataset prep), `submit_sft.sbatch` and
   `submit_rl.sbatch` (HPC batch submission), `checkpoint_policy.py` (checkpoint
   selection), `regression_gate.py` (validation gates), `package_adapter.py`
-  (submission packaging), and `resume_from_latest.py` (checkpoint resumption).
+  (submission packaging), and `resume_from_latest.py` (checkpoint-XXXXX
+  resumption from `--checkpoint-dir`).
 
 ## Why This Matters
 

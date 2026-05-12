@@ -52,7 +52,15 @@
       "mcp__claude-swarm__start_parallel_workers",
       "mcp__claude-swarm__check_all_workers",
       "mcp__claude-swarm__commit_progress",
-      "mcp__claude-swarm__check_worker"
+      "mcp__claude-swarm__check_worker",
+      "Bash(gh pr *)",
+      "mcp__claude-swarm__orchestrator_status",
+      "mcp__claude-swarm__orchestrator_reset",
+      "mcp__claude-swarm__start_worker",
+      "mcp__claude-swarm__send_worker_message",
+      "mcp__claude-swarm__get_session_stats",
+      "mcp__claude-swarm__check_reviews",
+      "mcp__claude-swarm__get_review_results"
     ]
   }
 }

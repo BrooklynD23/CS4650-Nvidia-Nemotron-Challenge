@@ -1,177 +1,435 @@
 {
   "projectDir": "/mnt/c/Users/DangT/Documents/GitHub/CS4650-Nvidia-Nemotron-Challenge",
-  "taskDescription": "Close the remaining implementation gaps identified in issues #10/#24 (synthetic data) and #11/#25 (SFT training pipeline) so the project can start fine-tuning. The approved plan is at /home/danny/.claude/plans/elegant-floating-russell.md. Key constraint: base model is metric/nemotron-3-nano-30b-a3b-bf16/transformers/default, lora_r <= 32, answers use \\boxed{} format, SFTExample schema is frozen in src/contracts.py:97.",
+  "taskDescription": "Sprint: Parallel Execution — implement the plan at docs/execution/plans/sprint-parallel-execution.md. Two parallel tracks: Track 1 (training pipeline) and Track 2 (data/eval/notebooks). Current branch: main (sprint branch to be created). Key missing deliverables: scripts/hpc/run_sft.py (the SFT training launcher replacing the stub in submit_sft.sbatch), configs/smoke_sft_local.yaml, preflight.sh --local flag, and notebook 09 fill. Pre-work also needed: wave-d retrospective doc and branch creation.",
   "features": [
     {
       "id": "feature-1",
-      "description": "T1-AB: Integrate configs/synthetic_prompts.yaml into src/data/synthetic.py generation pipeline AND add solver-confidence gate to QualityFilter. (1) Add prompt_config_path: Path | None = None to SyntheticConfig dataclass. (2) Load YAML at runtime with yaml.safe_load and pass prompt_templates dict to generate_from_retry_candidates(). (3) In the generation loop use prompt_templates[category]['system_prompt'] + problem_formulation to build the LLM teacher prompt. (4) Pull dry_run_token_estimate from YAML per-category instead of gold_text_len//4+200. (5) Add solver_confidence_threshold: float = 0.0 to SyntheticConfig. (6) In QualityFilter.accept() after the provenance check add: if self._config.solver_confidence_threshold > 0: conf = ex.provenance.get('solver_confidence', 0.0); if conf < self._config.solver_confidence_threshold: return False, 'low_solver_confidence'. (7) Add one new test to tests/data/test_synthetic.py: set solver_confidence_threshold=0.9 and verify a low-confidence example is rejected. All existing tests must still pass.",
+      "description": "PRE-WORK: Create sprint branch (git checkout -b sprint/parallel-execution && git push -u origin sprint/parallel-execution) and write docs/learn/project/wave-d-design-choices.md summarizing design choices from the Wave D implementation: lora_r=32 rationale, target_modules choice, apply_loss_mask API contract, keep-last-3-plus-best checkpoint policy, QualityFilter solver-confidence gate, smoke=50/cost-cap=$20 limits. Then discard CRLF drift in .claude/orchestrator/workers/feature-*.prompt via git checkout.",
       "status": "completed",
       "attempts": 1,
-      "startedAt": "2026-05-05T21:58:47.663Z",
-      "completedAt": "2026-05-05T22:27:50.799Z",
+      "startedAt": "2026-05-08T16:22:51.272Z",
+      "completedAt": "2026-05-08T16:26:33.189Z",
       "modifiedFiles": [
-        "configs/lora_baseline.yaml",
-        "configs/lora_qlora.yaml",
-        "configs/smoke_sft.yaml",
-        "docs/architecture/README.md",
-        "docs/architecture/SYNTHETIC_PROVENANCE.md",
-        "src/data/synthetic.py",
-        "src/training/__init__.py",
-        "src/training/sft_trainer.py",
-        "tests/data/test_synthetic.py",
-        "tests/training/__init__.py",
-        "tests/training/test_masking.py"
+        "docs/learn/project/wave-d-design-choices.md"
       ]
     },
     {
       "id": "feature-2",
-      "description": "T1-D: Create docs/architecture/SYNTHETIC_PROVENANCE.md documenting: artifact layout (data/synthetic/<run_id>.jsonl + .sha256 sidecar), provenance dict schema with fields teacher/generated_at/source_run_id/solver_confidence, fingerprint algorithm (SHA-256 of JSONL bytes), and step-by-step instructions to re-verify a dataset from scratch. Keep it concise (~80 lines max).",
+      "description": "T1.1: Create scripts/hpc/run_sft.py (~200 LOC). CLI training launcher that: parses --config <yaml> with extends: chain resolution; loads base model + tokenizer (trust_remote_code=True, dtype=bfloat16, device_map=auto, optional load_in_4bit for QLoRA); wraps with peft.LoraConfig using lora_r/lora_alpha/lora_dropout/target_modules from config; loads pre-tokenized .pt shards from --data-dir using a passthrough DataCollator that respects existing labels tensor (NO re-masking); instantiates trl.SFTTrainer with TrainingArguments from config; supports --resume-from-checkpoint; calls checkpoint_policy.py after training; exits 0 on success, 1 on failure. Must NOT call apply_loss_mask (already applied during tokenization). Add assert that sampled batch has (labels == -100).any().",
       "status": "completed",
       "attempts": 1,
-      "startedAt": "2026-05-05T21:58:47.659Z",
-      "completedAt": "2026-05-05T22:27:51.281Z",
-      "modifiedFiles": [
-        "configs/lora_baseline.yaml",
-        "configs/lora_qlora.yaml",
-        "configs/smoke_sft.yaml",
-        "docs/architecture/README.md",
-        "docs/architecture/SYNTHETIC_PROVENANCE.md",
-        "src/data/synthetic.py",
-        "src/training/__init__.py",
-        "src/training/sft_trainer.py",
-        "tests/data/test_synthetic.py",
-        "tests/training/__init__.py",
-        "tests/training/test_masking.py"
-      ]
-    },
-    {
-      "id": "feature-3",
-      "description": "T2-A: Create three training config YAML files. (1) configs/lora_baseline.yaml: base_model: metric/nemotron-3-nano-30b-a3b-bf16/transformers/default, lora_r: 32, lora_alpha: 64, lora_dropout: 0.05, target_modules: [in_proj, out_proj, up_proj, down_proj], load_in_4bit: false, torch_dtype: bfloat16, trust_remote_code: true. (2) configs/lora_qlora.yaml: same but load_in_4bit: true and lora_r: 16. (3) configs/smoke_sft.yaml: extends: configs/lora_baseline.yaml, max_steps: 100, per_device_train_batch_size: 1, dataset_max_rows: 1000, save_steps: 50, gradient_accumulation_steps: 4. These must match the frozen constraints in docs/architecture/COMPETITION.md and docs/execution/plans/issue-25-hpc-queue-runbook.md.",
-      "status": "completed",
-      "attempts": 1,
-      "startedAt": "2026-05-05T21:58:47.679Z",
-      "completedAt": "2026-05-05T22:27:51.777Z",
-      "modifiedFiles": [
-        "configs/lora_baseline.yaml",
-        "configs/lora_qlora.yaml",
-        "configs/smoke_sft.yaml",
-        "docs/architecture/README.md",
-        "docs/architecture/SYNTHETIC_PROVENANCE.md",
-        "src/data/synthetic.py",
-        "src/training/__init__.py",
-        "src/training/sft_trainer.py",
-        "tests/data/test_synthetic.py",
-        "tests/training/__init__.py",
-        "tests/training/test_masking.py"
-      ]
-    },
-    {
-      "id": "feature-4",
-      "description": "T2-B: Implement src/training/sft_trainer.py (new file, ~80 lines) with function apply_loss_mask(input_ids: list[int], labels: list[int], tokenizer, mask_role: str = 'user') -> list[int] that sets prompt/user/system turn token labels to -100 and leaves assistant turn labels unchanged. Must use type annotations, handle edge case where no assistant turn exists (raise ValueError). Also create src/training/__init__.py. Then create tests/training/__init__.py and tests/training/test_masking.py with 4 tests: test_user_tokens_masked (all user turn tokens have label -100), test_assistant_tokens_unmasked (assistant labels equal input_ids), test_system_tokens_masked (system tokens get -100), test_all_masked_raises (ValueError when no assistant turn). Use a minimal mock tokenizer that returns predictable token boundaries.",
-      "status": "completed",
-      "attempts": 1,
-      "startedAt": "2026-05-05T21:58:47.687Z",
-      "completedAt": "2026-05-05T22:27:52.332Z",
-      "modifiedFiles": [
-        "configs/lora_baseline.yaml",
-        "configs/lora_qlora.yaml",
-        "configs/smoke_sft.yaml",
-        "docs/architecture/README.md",
-        "docs/architecture/SYNTHETIC_PROVENANCE.md",
-        "src/data/synthetic.py",
-        "src/training/__init__.py",
-        "src/training/sft_trainer.py",
-        "tests/data/test_synthetic.py",
-        "tests/training/__init__.py",
-        "tests/training/test_masking.py"
-      ]
-    },
-    {
-      "id": "feature-5",
-      "description": "T1-C: Complete notebooks/08_synthetic_data_recipe.ipynb beyond its current 14-cell scaffold. The notebook exists but lacks executable generation content. Read the current notebook first. Then update: Cell [7] bind llm_teacher_fn with os.environ.get('LLM_API_KEY') guard — if absent use a stub lambda that returns '\\boxed{STUB}'. Cell [9] add actual generation loop calling generate_from_retry_candidates(candidates, config, smoke=True) from src.data.synthetic. Cell [10] fingerprint verification using Path(output_path + '.sha256').read_text(). Cell [11] summary table showing rows generated/rejected/cost/fingerprint. Strip all cell outputs before saving (existing repo convention — use nbstripout or clear outputs manually in the JSON).",
-      "status": "completed",
-      "attempts": 1,
-      "startedAt": "2026-05-05T22:28:23.869Z",
-      "completedAt": "2026-05-05T22:33:12.716Z",
+      "startedAt": "2026-05-08T16:26:58.006Z",
+      "completedAt": "2026-05-08T16:31:46.436Z",
       "dependsOn": [
         "feature-1"
       ],
       "modifiedFiles": [
-        "notebooks/08_synthetic_data_recipe.ipynb"
+        "docs/execution/NOTEBOOKS.md",
+        "scripts/hpc/run_sft.py",
+        "src/data/synthetic.py"
+      ]
+    },
+    {
+      "id": "feature-3",
+      "description": "T1.2: Edit scripts/hpc/submit_sft.sbatch lines 122-162. Replace the entire python heredoc stub block with: RESUME_ARG detection via resume_from_latest.py, then call python scripts/hpc/run_sft.py --config $CONFIG_PATH --data-dir $TOKENIZED_DIR --output-dir $RUN_DIR $RESUME_ARG 2>&1 | tee -a $RUN_DIR/train.log. Keep surrounding env-var setup, log header, exit-code handling. Remove 'stub' language from top comment.",
+      "status": "completed",
+      "attempts": 1,
+      "startedAt": "2026-05-08T16:32:04.716Z",
+      "completedAt": "2026-05-08T16:36:29.531Z",
+      "dependsOn": [
+        "feature-2"
+      ],
+      "modifiedFiles": [
+        "configs/smoke_sft_local.yaml",
+        "scripts/hpc/preflight.sh",
+        "scripts/hpc/submit_sft.sbatch"
+      ]
+    },
+    {
+      "id": "feature-4",
+      "description": "T1.3: Create configs/smoke_sft_local.yaml extending configs/smoke_sft.yaml with overrides: base_model: Qwen/Qwen2.5-0.5B-Instruct, lora_r: 8, lora_alpha: 16, target_modules: [q_proj, k_proj, v_proj, o_proj], dataset_max_rows: 100, max_steps: 20, save_steps: 10, header comment 'LOCAL SMOKE ONLY — NOT FOR SUBMISSION'. Also edit scripts/hpc/preflight.sh to add --local flag that skips frozen BASE_MODEL_ID check and model-weights-path check while still running CUDA/disk/package/dataset SHA256 checks.",
+      "status": "completed",
+      "attempts": 1,
+      "startedAt": "2026-05-08T16:32:04.684Z",
+      "completedAt": "2026-05-08T16:36:30.813Z",
+      "dependsOn": [
+        "feature-2"
+      ],
+      "modifiedFiles": [
+        "configs/smoke_sft_local.yaml",
+        "scripts/hpc/preflight.sh",
+        "scripts/hpc/submit_sft.sbatch"
+      ]
+    },
+    {
+      "id": "feature-5",
+      "description": "T2.4: Fill notebooks/09_sft_runbook_and_masking.ipynb beyond its current stub (~200 lines). Add cells: (1) masking walkthrough loading a real SFTExample, showing tokenizer output, calling apply_loss_mask, rendering which positions are kept vs masked; (2) pipeline diagram markdown: preflight → tokenize_dataset → run_sft → checkpoint_policy → regression_gate → package_adapter; (3) reference CLI invocation cells (do NOT execute training, just show commands for run_sft.py with lora_baseline.yaml and the sbatch submission); (4) resume semantics showing how resume_from_latest.py feeds --resume-from-checkpoint; (5) promotion criteria: golden gate must pass before package_adapter.py runs. Update docs/execution/NOTEBOOKS.md: notebook 09 status scaffolded → active.",
+      "status": "completed",
+      "attempts": 1,
+      "startedAt": "2026-05-08T16:36:46.674Z",
+      "completedAt": "2026-05-08T16:58:49.070Z",
+      "dependsOn": [
+        "feature-2",
+        "feature-3"
+      ],
+      "modifiedFiles": [
+        "docs/execution/NOTEBOOKS.md",
+        "notebooks/09_sft_runbook_and_masking.ipynb"
       ]
     },
     {
       "id": "feature-6",
-      "description": "T2-C: Create scripts/hpc/ directory with all 8 HPC scripts. Read docs/execution/plans/issue-25-hpc-queue-runbook.md first for full spec. (1) preflight.sh: bash script checking CUDA available, model weights path exists, dataset .sha256 valid, disk space >50GB, required Python packages importable. Exit 0 on pass, 1 on fail with clear error messages. (2) tokenize_dataset.py: load JSONL of SFTExample rows, apply chat template, call apply_loss_mask() from src.training.sft_trainer, save tokenized .pt shards, accept --input/--output/--config args. (3) submit_sft.sbatch: SLURM job (4 GPUs, 64GB RAM, 24h), activates venv, runs tokenize_dataset.py then a training loop stub. (4) submit_rl.sbatch: similar SLURM job for RL phase. (5) checkpoint_policy.py: given a checkpoint dir writes sidecar files trainer_state.json/run_config.json/metrics.jsonl/git_sha.txt/dataset_fingerprint.txt and enforces keep-last-3-plus-best policy. (6) regression_gate.py: loads EvalRecord JSONL + golden SplitArtifactRow JSONL, calls run_gate() from src.evaluation.golden_gate (already implemented), exits 0 on pass / 1 on fail — accept --eval-records and --golden args. (7) package_adapter.py: thin wrapper around src.inference.submission (already implemented), accepts --adapter-dir/--output-dir/--base-model-id/--adapter-rank args. (8) resume_from_latest.py: scans checkpoint dir for highest step number, prints the --resume_from_checkpoint path to stdout. All scripts must have --help, type annotations where Python, and shebang lines.",
+      "description": "T2.5: Run synthetic data smoke generation. Execute: python -m src.data.synthetic --smoke --dry-run (cost estimate), then python -m src.data.synthetic --smoke (50-row real generation). This produces data/processed/synthetic_train.jsonl + .sha256. If data/analysis/retry_candidates.jsonl is missing (expected), the smoke path uses an empty-list fallback. Document the smoke output in docs/execution/NOTEBOOKS.md notebook 08 entry if status needs updating.",
       "status": "completed",
       "attempts": 1,
-      "startedAt": "2026-05-05T22:28:23.842Z",
+      "startedAt": "2026-05-08T16:26:57.980Z",
+      "completedAt": "2026-05-08T16:31:48.357Z",
       "dependsOn": [
-        "feature-3",
-        "feature-4"
+        "feature-1"
       ],
       "modifiedFiles": [
-        "notebooks/08_synthetic_data_recipe.ipynb",
-        "scripts/hpc/checkpoint_policy.py",
-        "scripts/hpc/package_adapter.py",
-        "scripts/hpc/preflight.sh",
-        "scripts/hpc/regression_gate.py",
-        "scripts/hpc/resume_from_latest.py",
-        "scripts/hpc/submit_rl.sbatch",
-        "scripts/hpc/submit_sft.sbatch",
-        "scripts/hpc/tokenize_dataset.py"
-      ],
-      "completedAt": "2026-05-05T22:48:59.294Z"
+        "docs/execution/NOTEBOOKS.md",
+        "scripts/hpc/run_sft.py",
+        "src/data/synthetic.py"
+      ]
     }
   ],
   "workers": [],
-  "status": "reviewing",
-  "startTime": "2026-05-05T19:41:40.768Z",
-  "lastUpdated": "2026-05-05T22:48:59.570Z",
+  "status": "completed",
+  "startTime": "2026-05-08T16:17:45.925Z",
+  "lastUpdated": "2026-05-08T17:08:34.350Z",
   "progressLog": [
-    "[2026-05-05T19:41:40.768Z] Orchestration initialized with 6 features",
-    "[2026-05-05T19:49:00.115Z] Set dependencies for feature-5: feature-1",
-    "[2026-05-05T19:49:05.463Z] Set dependencies for feature-6: feature-3, feature-4",
-    "[2026-05-05T19:56:49.378Z] ⚙️ Verification configuration updated: 2 command(s)",
-    "[2026-05-05T21:58:47.687Z] Started 4 parallel workers: feature-1, feature-2, feature-3, feature-4",
-    "[2026-05-05T22:00:46.463Z] 🔔 Worker completed: feature-3 - use mark_complete to update status",
-    "[2026-05-05T22:01:25.370Z] 🔔 Worker completed: feature-2 - use mark_complete to update status",
-    "[2026-05-05T22:02:14.841Z] 🔔 Worker completed: feature-1 - use mark_complete to update status",
-    "[2026-05-05T22:02:44.321Z] 🔔 Worker completed: feature-4 - use mark_complete to update status",
-    "[2026-05-05T22:27:50.917Z] ✅ Completed: feature-1 - T1-AB: Integrate configs/synthetic_prompts.yaml into src/data/synthetic.py generation pipeline AND add solver-confidence gate to QualityFilter. (1) Add prompt_config_path: Path | None = None to SyntheticConfig dataclass. (2) Load YAML at runtime with yaml.safe_load and pass prompt_templates dict to generate_from_retry_candidates(). (3) In the generation loop use prompt_templates[category]['system_prompt'] + problem_formulation to build the LLM teacher prompt. (4) Pull dry_run_token_estimate from YAML per-category instead of gold_text_len//4+200. (5) Add solver_confidence_threshold: float = 0.0 to SyntheticConfig. (6) In QualityFilter.accept() after the provenance check add: if self._config.solver_confidence_threshold > 0: conf = ex.provenance.get('solver_confidence', 0.0); if conf < self._config.solver_confidence_threshold: return False, 'low_solver_confidence'. (7) Add one new test to tests/data/test_synthetic.py: set solver_confidence_threshold=0.9 and verify a low-confidence example is rejected. All existing tests must still pass.",
-    "[2026-05-05T22:27:51.392Z] ✅ Completed: feature-2 - T1-D: Create docs/architecture/SYNTHETIC_PROVENANCE.md documenting: artifact layout (data/synthetic/<run_id>.jsonl + .sha256 sidecar), provenance dict schema with fields teacher/generated_at/source_run_id/solver_confidence, fingerprint algorithm (SHA-256 of JSONL bytes), and step-by-step instructions to re-verify a dataset from scratch. Keep it concise (~80 lines max).",
-    "[2026-05-05T22:27:51.926Z] ✅ Completed: feature-3 - T2-A: Create three training config YAML files. (1) configs/lora_baseline.yaml: base_model: metric/nemotron-3-nano-30b-a3b-bf16/transformers/default, lora_r: 32, lora_alpha: 64, lora_dropout: 0.05, target_modules: [in_proj, out_proj, up_proj, down_proj], load_in_4bit: false, torch_dtype: bfloat16, trust_remote_code: true. (2) configs/lora_qlora.yaml: same but load_in_4bit: true and lora_r: 16. (3) configs/smoke_sft.yaml: extends: configs/lora_baseline.yaml, max_steps: 100, per_device_train_batch_size: 1, dataset_max_rows: 1000, save_steps: 50, gradient_accumulation_steps: 4. These must match the frozen constraints in docs/architecture/COMPETITION.md and docs/execution/plans/issue-25-hpc-queue-runbook.md.",
-    "[2026-05-05T22:27:52.444Z] ✅ Completed: feature-4 - T2-B: Implement src/training/sft_trainer.py (new file, ~80 lines) with function apply_loss_mask(input_ids: list[int], labels: list[int], tokenizer, mask_role: str = 'user') -> list[int] that sets prompt/user/system turn token labels to -100 and leaves assistant turn labels unchanged. Must use type annotations, handle edge case where no assistant turn exists (raise ValueError). Also create src/training/__init__.py. Then create tests/training/__init__.py and tests/training/test_masking.py with 4 tests: test_user_tokens_masked (all user turn tokens have label -100), test_assistant_tokens_unmasked (assistant labels equal input_ids), test_system_tokens_masked (system tokens get -100), test_all_masked_raises (ValueError when no assistant turn). Use a minimal mock tokenizer that returns predictable token boundaries.",
-    "[2026-05-05T22:28:09.216Z] Git commit: feat: batch-1 complete — synthetic prompts wired, confidence gate, masking, training configs, provenance doc",
-    "[2026-05-05T22:28:23.869Z] Started 2 parallel workers: feature-5, feature-6",
-    "[2026-05-05T22:31:23.456Z] 🔔 Worker completed: feature-5 - use mark_complete to update status",
-    "[2026-05-05T22:33:12.839Z] ✅ Completed: feature-5 - T1-C: Complete notebooks/08_synthetic_data_recipe.ipynb beyond its current 14-cell scaffold. The notebook exists but lacks executable generation content. Read the current notebook first. Then update: Cell [7] bind llm_teacher_fn with os.environ.get('LLM_API_KEY') guard — if absent use a stub lambda that returns '\\boxed{STUB}'. Cell [9] add actual generation loop calling generate_from_retry_candidates(candidates, config, smoke=True) from src.data.synthetic. Cell [10] fingerprint verification using Path(output_path + '.sha256').read_text(). Cell [11] summary table showing rows generated/rejected/cost/fingerprint. Strip all cell outputs before saving (existing repo convention — use nbstripout or clear outputs manually in the JSON).",
-    "[2026-05-05T22:39:43.443Z] 🔔 Worker completed: feature-6 - use mark_complete to update status",
-    "[2026-05-05T22:48:59.383Z] ✅ Completed: feature-6 - T2-C: Create scripts/hpc/ directory with all 8 HPC scripts. Read docs/execution/plans/issue-25-hpc-queue-runbook.md first for full spec. (1) preflight.sh: bash script checking CUDA available, model weights path exists, dataset .sha256 valid, disk space >50GB, required Python packages importable. Exit 0 on pass, 1 on fail with clear error messages. (2) tokenize_dataset.py: load JSONL of SFTExample rows, apply chat template, call apply_loss_mask() from src.training.sft_trainer, save tokenized .pt shards, accept --input/--output/--config args. (3) submit_sft.sbatch: SLURM job (4 GPUs, 64GB RAM, 24h), activates venv, runs tokenize_dataset.py then a training loop stub. (4) submit_rl.sbatch: similar SLURM job for RL phase. (5) checkpoint_policy.py: given a checkpoint dir writes sidecar files trainer_state.json/run_config.json/metrics.jsonl/git_sha.txt/dataset_fingerprint.txt and enforces keep-last-3-plus-best policy. (6) regression_gate.py: loads EvalRecord JSONL + golden SplitArtifactRow JSONL, calls run_gate() from src.evaluation.golden_gate (already implemented), exits 0 on pass / 1 on fail — accept --eval-records and --golden args. (7) package_adapter.py: thin wrapper around src.inference.submission (already implemented), accepts --adapter-dir/--output-dir/--base-model-id/--adapter-rank args. (8) resume_from_latest.py: scans checkpoint dir for highest step number, prints the --resume_from_checkpoint path to stdout. All scripts must have --help, type annotations where Python, and shebang lines.",
-    "[2026-05-05T22:48:59.383Z] 🔍 All features done. Starting automated reviews...",
-    "[2026-05-05T22:48:59.570Z] 🔍 Started 2 review worker(s)"
+    "[2026-05-08T16:17:45.925Z] Orchestration initialized with 6 features",
+    "[2026-05-08T16:18:01.732Z] Set dependencies for feature-2: feature-1",
+    "[2026-05-08T16:18:02.554Z] Set dependencies for feature-3: feature-2",
+    "[2026-05-08T16:18:03.047Z] Set dependencies for feature-4: feature-2",
+    "[2026-05-08T16:18:03.787Z] Set dependencies for feature-5: feature-2, feature-3",
+    "[2026-05-08T16:18:04.274Z] Set dependencies for feature-6: feature-1",
+    "[2026-05-08T16:22:51.272Z] Started worker for feature-1: PRE-WORK: Create sprint branch (git checkout -b sprint/parallel-execution && git push -u origin sprint/parallel-execution) and write docs/learn/project/wave-d-design-choices.md summarizing design choices from the Wave D implementation: lora_r=32 rationale, target_modules choice, apply_loss_mask API contract, keep-last-3-plus-best checkpoint policy, QualityFilter solver-confidence gate, smoke=50/cost-cap=$20 limits. Then discard CRLF drift in .claude/orchestrator/workers/feature-*.prompt via git checkout.",
+    "[2026-05-08T16:25:44.087Z] 🔔 Worker completed: feature-1 - use mark_complete to update status",
+    "[2026-05-08T16:26:33.307Z] ✅ Completed: feature-1 - PRE-WORK: Create sprint branch (git checkout -b sprint/parallel-execution && git push -u origin sprint/parallel-execution) and write docs/learn/project/wave-d-design-choices.md summarizing design choices from the Wave D implementation: lora_r=32 rationale, target_modules choice, apply_loss_mask API contract, keep-last-3-plus-best checkpoint policy, QualityFilter solver-confidence gate, smoke=50/cost-cap=$20 limits. Then discard CRLF drift in .claude/orchestrator/workers/feature-*.prompt via git checkout.",
+    "[2026-05-08T16:26:58.006Z] Started 2 parallel workers: feature-2, feature-6",
+    "[2026-05-08T16:30:44.983Z] 🔔 Worker completed: feature-6 - use mark_complete to update status",
+    "[2026-05-08T16:31:35.698Z] 🔔 Worker completed: feature-2 - use mark_complete to update status",
+    "[2026-05-08T16:31:46.543Z] ✅ Completed: feature-2 - T1.1: Create scripts/hpc/run_sft.py (~200 LOC). CLI training launcher that: parses --config <yaml> with extends: chain resolution; loads base model + tokenizer (trust_remote_code=True, dtype=bfloat16, device_map=auto, optional load_in_4bit for QLoRA); wraps with peft.LoraConfig using lora_r/lora_alpha/lora_dropout/target_modules from config; loads pre-tokenized .pt shards from --data-dir using a passthrough DataCollator that respects existing labels tensor (NO re-masking); instantiates trl.SFTTrainer with TrainingArguments from config; supports --resume-from-checkpoint; calls checkpoint_policy.py after training; exits 0 on success, 1 on failure. Must NOT call apply_loss_mask (already applied during tokenization). Add assert that sampled batch has (labels == -100).any().",
+    "[2026-05-08T16:31:48.539Z] ✅ Completed: feature-6 - T2.5: Run synthetic data smoke generation. Execute: python -m src.data.synthetic --smoke --dry-run (cost estimate), then python -m src.data.synthetic --smoke (50-row real generation). This produces data/processed/synthetic_train.jsonl + .sha256. If data/analysis/retry_candidates.jsonl is missing (expected), the smoke path uses an empty-list fallback. Document the smoke output in docs/execution/NOTEBOOKS.md notebook 08 entry if status needs updating.",
+    "[2026-05-08T16:32:04.716Z] Started 2 parallel workers: feature-3, feature-4",
+    "[2026-05-08T16:35:06.995Z] 🔔 Worker completed: feature-3 - use mark_complete to update status",
+    "[2026-05-08T16:35:07.059Z] 🔔 Worker completed: feature-4 - use mark_complete to update status",
+    "[2026-05-08T16:36:29.640Z] ✅ Completed: feature-3 - T1.2: Edit scripts/hpc/submit_sft.sbatch lines 122-162. Replace the entire python heredoc stub block with: RESUME_ARG detection via resume_from_latest.py, then call python scripts/hpc/run_sft.py --config $CONFIG_PATH --data-dir $TOKENIZED_DIR --output-dir $RUN_DIR $RESUME_ARG 2>&1 | tee -a $RUN_DIR/train.log. Keep surrounding env-var setup, log header, exit-code handling. Remove 'stub' language from top comment.",
+    "[2026-05-08T16:36:30.928Z] ✅ Completed: feature-4 - T1.3: Create configs/smoke_sft_local.yaml extending configs/smoke_sft.yaml with overrides: base_model: Qwen/Qwen2.5-0.5B-Instruct, lora_r: 8, lora_alpha: 16, target_modules: [q_proj, k_proj, v_proj, o_proj], dataset_max_rows: 100, max_steps: 20, save_steps: 10, header comment 'LOCAL SMOKE ONLY — NOT FOR SUBMISSION'. Also edit scripts/hpc/preflight.sh to add --local flag that skips frozen BASE_MODEL_ID check and model-weights-path check while still running CUDA/disk/package/dataset SHA256 checks.",
+    "[2026-05-08T16:36:46.674Z] Started worker for feature-5: T2.4: Fill notebooks/09_sft_runbook_and_masking.ipynb beyond its current stub (~200 lines). Add cells: (1) masking walkthrough loading a real SFTExample, showing tokenizer output, calling apply_loss_mask, rendering which positions are kept vs masked; (2) pipeline diagram markdown: preflight → tokenize_dataset → run_sft → checkpoint_policy → regression_gate → package_adapter; (3) reference CLI invocation cells (do NOT execute training, just show commands for run_sft.py with lora_baseline.yaml and the sbatch submission); (4) resume semantics showing how resume_from_latest.py feeds --resume-from-checkpoint; (5) promotion criteria: golden gate must pass before package_adapter.py runs. Update docs/execution/NOTEBOOKS.md: notebook 09 status scaffolded → active.",
+    "[2026-05-08T16:46:00.255Z] Sent message to feature-5: Please proceed with the task. Read notebooks/09_sft_runbook_and_masking.ipynb (it currently has 18 c...",
+    "[2026-05-08T16:46:11.728Z] 🔔 Worker completed: feature-5 - use mark_complete to update status",
+    "[2026-05-08T16:58:49.670Z] ✅ Completed: feature-5 - T2.4: Fill notebooks/09_sft_runbook_and_masking.ipynb beyond its current stub (~200 lines). Add cells: (1) masking walkthrough loading a real SFTExample, showing tokenizer output, calling apply_loss_mask, rendering which positions are kept vs masked; (2) pipeline diagram markdown: preflight → tokenize_dataset → run_sft → checkpoint_policy → regression_gate → package_adapter; (3) reference CLI invocation cells (do NOT execute training, just show commands for run_sft.py with lora_baseline.yaml and the sbatch submission); (4) resume semantics showing how resume_from_latest.py feeds --resume-from-checkpoint; (5) promotion criteria: golden gate must pass before package_adapter.py runs. Update docs/execution/NOTEBOOKS.md: notebook 09 status scaffolded → active.",
+    "[2026-05-08T16:58:49.671Z] 🔍 All features done. Starting automated reviews...",
+    "[2026-05-08T16:58:50.249Z] 🔍 Started 2 review worker(s)",
+    "[2026-05-08T17:08:34.160Z] Code Review: moderate - 6 issue(s)",
+    "[2026-05-08T17:08:34.160Z]   Summary: Six features were implemented cleanly across the sprint. The core training launcher (run_sft.py) is well-structured with clear separation of concerns, solid config chain resolution, and a correct pass\n... (truncated)",
+    "[2026-05-08T17:08:34.160Z] Architecture Review: moderate - 9 issue(s)",
+    "[2026-05-08T17:08:34.160Z]   Summary: The sprint delivers a coherent training pipeline across six features: a YAML-based config chain resolver, a LoRA launcher, a passthrough data collator, a preflight gate with a --local flag, and a runb\n... (truncated)",
+    "[2026-05-08T17:08:34.160Z] Overall assessment: moderate. Found 15 issue(s) (2 error(s), 9 warning(s)) across code quality and architecture reviews.",
+    "[2026-05-08T17:08:34.160Z] 🏁 Orchestration completed with reviews."
   ],
-  "verificationConfig": {
-    "commands": [
-      "pytest tests/data/test_synthetic.py tests/data/test_gan_refine.py -v --tb=short",
-      "pytest tests/ -v --tb=short --ignore=tests/data/test_synthetic.py --ignore=tests/data/test_gan_refine.py -q"
-    ],
-    "failOnError": true
-  },
   "reviewWorkers": [
     {
       "type": "code",
-      "workerId": "cc-reviewer-code-mot7zxwu",
-      "sessionName": "cc-reviewer-code-mot7zxwu",
-      "status": "running",
-      "startedAt": "2026-05-05T22:48:59.540Z"
+      "workerId": "cc-reviewer-code-mox5t6ya",
+      "sessionName": "cc-reviewer-code-mox5t6ya",
+      "status": "completed",
+      "startedAt": "2026-05-08T16:58:50.188Z",
+      "completedAt": "2026-05-08T17:08:34.104Z",
+      "findings": {
+        "summary": "Six features were implemented cleanly across the sprint. The core training launcher (run_sft.py) is well-structured with clear separation of concerns, solid config chain resolution, and a correct passthrough collator with the required -100 assertion. The wave-d retrospective doc and smoke_sft_local.yaml are accurate and well-formed. The T2.5 synthetic CLI wiring is clean. Three moderate issues require attention before the first full HPC run: (1) dataset_max_rows config key is silently ignored by ShardDataset, so the smoke local config's row cap is never enforced; (2) preflight.sh --local only skips BASE_MODEL_ID and MODEL_WEIGHTS_PATH but still requires LORA_RANK, LORA_TARGET_MODULES, and NORMALIZER_ID env vars, making it unusable without the full env setup; (3) unquoted $RESUME_ARG in submit_sft.sbatch will split incorrectly if a checkpoint path contains spaces. Two minor/info issues round out the review.",
+        "severity": "moderate",
+        "issues": [
+          {
+            "category": "bug",
+            "severity": "warning",
+            "file": "scripts/hpc/run_sft.py",
+            "line": 204,
+            "message": "ShardDataset ignores the 'dataset_max_rows' config key. smoke_sft_local.yaml sets dataset_max_rows: 100 and smoke_sft.yaml sets 1000, but ShardDataset loads every example from every .pt shard with no row limit. The config key is loaded into 'cfg' and logged but never consumed.",
+            "suggestion": "Add `max_rows = cfg.get('dataset_max_rows')` and slice `self._examples = self._examples[:max_rows]` inside ShardDataset.__init__ when the value is set. Alternatively, document explicitly that dataset_max_rows is reserved for the tokenizer step and is intentionally ignored at training time."
+          },
+          {
+            "category": "bug",
+            "severity": "warning",
+            "file": "scripts/hpc/preflight.sh",
+            "line": 101,
+            "message": "The --local flag skips BASE_MODEL_ID and MODEL_WEIGHTS_PATH checks but does NOT skip LORA_RANK, LORA_TARGET_MODULES, or NORMALIZER_ID checks (lines 101-121). Running 'bash preflight.sh --local' without those env vars set will still FAIL with 'LORA_RANK is not set' and 'NORMALIZER_ID is not set', defeating the purpose of local smoke mode.",
+            "suggestion": "Gate the LORA_RANK / NORMALIZER_ID checks under `if [[ $LOCAL -eq 0 ]]`, or add a 'local smoke defaults' block that pre-populates LORA_RANK=8 and NORMALIZER_ID=boxed_exact_or_numeric when --local is passed and the vars are unset. At minimum update the usage comment to list all vars still required in --local mode."
+          },
+          {
+            "category": "bug",
+            "severity": "warning",
+            "file": "scripts/hpc/submit_sft.sbatch",
+            "line": 132,
+            "message": "RESUME_ARG is unquoted: `$RESUME_ARG` without quotes. This relies on shell word-splitting to pass two tokens (--resume-from-checkpoint <path>). If the checkpoint path contains a space the split breaks and produces a malformed argument list.",
+            "suggestion": "Use a bash array: `RESUME_ARGS=(); [ -n \"$LATEST\" ] && RESUME_ARGS=(--resume-from-checkpoint \"$LATEST\")` then call `python scripts/hpc/run_sft.py ... \"${RESUME_ARGS[@]}\"`. This handles spaces correctly and is idiomatic bash."
+          },
+          {
+            "category": "maintainability",
+            "severity": "warning",
+            "file": "scripts/hpc/submit_sft.sbatch",
+            "line": 140,
+            "message": "Checkpoint policy runs twice: once inside run_sft.py (line 366, on args.output_dir = $RUN_DIR) and once explicitly at step 4 of submit_sft.sbatch (on $CHECKPOINT_DIR which is a subdirectory of $RUN_DIR). The double invocation is confusing and means the policy callsite is split across two files.",
+            "suggestion": "Remove the _run_checkpoint_policy() call from run_sft.py and rely solely on the explicit step 4 invocation in the sbatch, or vice versa. Document the decision in the function docstring to avoid re-introducing the other call."
+          },
+          {
+            "category": "security",
+            "severity": "info",
+            "file": "scripts/hpc/run_sft.py",
+            "line": 214,
+            "message": "torch.load() is called with weights_only=False. This allows arbitrary Python object deserialisation from .pt shards and is flagged by PyTorch as a security risk for untrusted sources.",
+            "suggestion": "If the .pt shards contain only list[dict[str, list[int]]] (as documented), switch to weights_only=True. If raw tensors are stored, confirm shards originate exclusively from tokenize_dataset.py and add a comment explaining why weights_only=False is intentional."
+          },
+          {
+            "category": "maintainability",
+            "severity": "info",
+            "file": "src/data/synthetic.py",
+            "line": 227,
+            "message": "Both the verifier path and the LLM teacher path swallow all exceptions silently with bare `except Exception: pass`. A mis-configured verifier or broken teacher function will silently skip all examples rather than surfacing the error.",
+            "suggestion": "Log the exception at WARNING level before continuing: `except Exception as exc: log.warning('Teacher failed for %s: %s', row.record.example_id, exc)`. This preserves the skip-on-error behaviour while making failures visible in smoke run output."
+          }
+        ],
+        "recommendations": [
+          "Before the first real HPC run: fix the dataset_max_rows gap (either implement it in ShardDataset or remove the key from smoke configs to avoid false expectations) and fix the unquoted $RESUME_ARG.",
+          "The --local preflight workflow needs to either auto-populate required env vars or update its documentation to list all vars that must still be exported; otherwise local smoke testing will produce confusing 'LORA_RANK is not set' failures.",
+          "Consolidate checkpoint policy invocation to a single callsite (inside run_sft.py OR in the sbatch step 4, not both) to reduce confusion about which directory is being managed.",
+          "Consider switching torch.load to weights_only=True once the shard format is confirmed to be pure Python list-of-dicts, to eliminate the PyTorch security warning.",
+          "The synthetic.py silent-exception pattern in the teacher loop should emit at least a WARNING log to make smoke run failures diagnosable from the output."
+        ]
+      }
     },
     {
       "type": "architecture",
-      "workerId": "cc-reviewer-architecture-mot7zxxw",
-      "sessionName": "cc-reviewer-architecture-mot7zxxw",
-      "status": "running",
-      "startedAt": "2026-05-05T22:48:59.570Z"
+      "workerId": "cc-reviewer-architecture-mox5t70t",
+      "sessionName": "cc-reviewer-architecture-mox5t70t",
+      "status": "completed",
+      "startedAt": "2026-05-08T16:58:50.249Z",
+      "completedAt": "2026-05-08T17:08:34.151Z",
+      "findings": {
+        "summary": "The sprint delivers a coherent training pipeline across six features: a YAML-based config chain resolver, a LoRA launcher, a passthrough data collator, a preflight gate with a --local flag, and a runbook notebook. The core design decisions — separating pre-masking in tokenize_dataset.py from training in run_sft.py, using an extends: inheritance chain for configs, and keeping scripts/hpc/ launchers thin over a src/ library — are sound and well-documented. However, there is a significant naming-convention mismatch between the checkpoint management utilities (checkpoint_policy.py, resume_from_latest.py) that use a step-XXXXX pattern and what HuggingFace/trl SFTTrainer actually writes (checkpoint-XXXXX), rendering both the checkpoint rotation policy and the resume detection effectively inoperative without an adapter layer. A secondary issue is a double invocation of checkpoint_policy logic — once from within run_sft.py and once from submit_sft.sbatch Step 4 — targeting different directories, neither of which contains step-XXXXX dirs.",
+        "severity": "moderate",
+        "issues": [
+          {
+            "category": "consistency",
+            "severity": "error",
+            "file": "scripts/hpc/checkpoint_policy.py",
+            "message": "checkpoint_policy.py and resume_from_latest.py both scan for subdirectories matching ^step-(\\d+)$ but trl.SFTTrainer (via HuggingFace Trainer) saves checkpoints as checkpoint-{step}/ (e.g. checkpoint-100). The pattern will never match, so checkpoint rotation silently does nothing and resume detection always returns no checkpoint found.",
+            "suggestion": "Either update _STEP_RE = re.compile(r'^checkpoint-(\\d+)$') in both scripts to match HuggingFace Trainer output, or add a custom TrainerCallback that renames checkpoint-N dirs to step-N after each save_steps event. Prefer the former since it eliminates the rename side-effect."
+          },
+          {
+            "category": "coupling",
+            "severity": "error",
+            "file": "scripts/hpc/submit_sft.sbatch",
+            "message": "resume_from_latest.py is called on '$RUN_DIR/checkpoints' (line 124) but run_sft.py is told --output-dir '$RUN_DIR' (line 131), so the Trainer writes checkpoints to $RUN_DIR/checkpoint-* while the resume scanner looks in $RUN_DIR/checkpoints/. If $CHECKPOINT_ROOT differs from $RUN_ROOT, $CHECKPOINT_DIR diverges further. The resume path is structurally guaranteed to find nothing on first invocation.",
+            "suggestion": "Pass a consistent checkpoint sub-directory to both run_sft.py (--output-dir \"$CHECKPOINT_DIR\") and resume_from_latest.py, or make resume_from_latest.py accept the same $RUN_DIR and scan one level down."
+          },
+          {
+            "category": "pattern",
+            "severity": "warning",
+            "file": "scripts/hpc/run_sft.py",
+            "message": "_run_checkpoint_policy() is called inside run_sft.py at line 366 with --execute (always active), and submit_sft.sbatch Step 4 independently calls checkpoint_policy.py on $CHECKPOINT_DIR. These two calls target different directories ($RUN_DIR vs $CHECKPOINT_DIR) and both will silently find zero step-XXXXX dirs. The duplication obscures which layer owns checkpoint lifecycle management.",
+            "suggestion": "Remove the _run_checkpoint_policy() call from run_sft.py main() and let the orchestrating sbatch script own checkpoint lifecycle as a separate explicit step. A launcher should not call post-processing that the orchestrator also calls."
+          },
+          {
+            "category": "abstraction",
+            "severity": "warning",
+            "file": "scripts/hpc/run_sft.py",
+            "message": "PassthroughCollator pads input_ids with token ID 0 hardcoded (line 259) instead of the tokenizer's pad_token_id. The tokenizer is not injected into the collator. Padding with 0 is harmless when attention_mask correctly masks those positions, but it violates the principle of using the model's canonical pad token and can cause confusion if 0 happens to be a real vocab token.",
+            "suggestion": "Accept tokenizer (or just pad_token_id: int) as a constructor argument to PassthroughCollator and use it for input_ids padding."
+          },
+          {
+            "category": "consistency",
+            "severity": "warning",
+            "file": "configs/smoke_sft_local.yaml",
+            "message": "smoke_sft_local.yaml sets target_modules: [q_proj, k_proj, v_proj, o_proj] (attention heads, correct for Qwen2.5-0.5B-Instruct) while lora_baseline.yaml uses [in_proj, out_proj, up_proj, down_proj] (Mamba2 SSM modules for the actual competition model). The divergence is architecturally correct but undocumented inline; a reader may assume local smoke validates the same LoRA wiring as production.",
+            "suggestion": "Add a comment to smoke_sft_local.yaml: '# target_modules override for Qwen2.5 attention architecture; production uses in_proj/out_proj/up_proj/down_proj for Mamba2.'"
+          },
+          {
+            "category": "pattern",
+            "severity": "warning",
+            "file": "scripts/hpc/run_sft.py",
+            "message": "Both run_sft.py and tokenize_dataset.py mutate sys.path at module import time (sys.path.insert(0, str(_REPO_ROOT))). This is a side-effect that changes the import environment for all downstream code in the process and can cause hard-to-diagnose import shadowing if the repo root contains a module that conflicts with an installed package.",
+            "suggestion": "Use PYTHONPATH=$REPO_ROOT in the shell environment (set in submit_sft.sbatch or the venv activation) rather than mutating sys.path at import time."
+          },
+          {
+            "category": "abstraction",
+            "severity": "warning",
+            "file": "scripts/hpc/run_sft.py",
+            "message": "load_config() has no schema validation after resolving the extends: chain. Required keys (base_model, lora_r, target_modules) are accessed with cfg.get() with silent fallbacks, so a misconfigured or broken extends chain produces a confusing runtime error deep in model loading rather than a fast-fail at config parse time.",
+            "suggestion": "Add a lightweight validation step after load_config() that asserts required keys are present and non-empty before the expensive model download begins."
+          },
+          {
+            "category": "scalability",
+            "severity": "info",
+            "file": "scripts/hpc/run_sft.py",
+            "message": "ShardDataset loads all .pt shards fully into CPU memory in __init__ (self._examples is a flat Python list). For the current smoke scale (100-1000 examples) this is fine, but at full dataset scale the memory footprint could be significant before training even begins.",
+            "suggestion": "For future scale, consider lazy shard loading: hold a list of (shard_path, offset) pointers and load one shard at a time in __getitem__. This is a known-future-requirement, not a current blocker."
+          },
+          {
+            "category": "pattern",
+            "severity": "info",
+            "file": "scripts/hpc/run_sft.py",
+            "message": "torch.load(..., weights_only=False) at line 214 silences PyTorch's pickle-safety warning. In this closed pipeline (shards produced by the same repo) this is safe, but it disables the security guard that catches malicious .pt files if the data directory were ever populated from an external source.",
+            "suggestion": "Add an inline comment documenting the assumption: '# weights_only=False: shards are produced by this repo; safe to unpickle.' If the data directory is ever shared with external write access, switch to weights_only=True with appropriate safe_globals registration."
+          }
+        ],
+        "recommendations": [
+          "Fix the step-XXXXX vs checkpoint-XXXXX naming mismatch as the highest priority — checkpoint rotation and resume detection are both silently broken, meaning each job starts from scratch and disk accumulates unbounded checkpoints.",
+          "Consolidate checkpoint lifecycle ownership into submit_sft.sbatch exclusively; remove the _run_checkpoint_policy() call from run_sft.py to eliminate dual-invocation on mismatched directories.",
+          "Wire a consistent output directory through the whole sbatch pipeline: pass --output-dir \"$CHECKPOINT_DIR\" to run_sft.py and point resume_from_latest.py at the same directory so all three steps (train, resume, rotate) share one path.",
+          "Inject pad_token_id into PassthroughCollator at construction time rather than hardcoding 0, to make the collator's contract explicit and safe for any tokenizer.",
+          "Replace sys.path mutation in both launcher scripts with PYTHONPATH= in the sbatch environment; this is already the HPC convention and removes the import-shadowing risk.",
+          "Add a config schema validation step (required keys + type assertions) immediately after load_config() in run_sft.py so misconfiguration fails fast before the model download begins.",
+          "Add an inline comment to smoke_sft_local.yaml explaining the target_modules divergence from production to prevent a future reader from treating smoke success as proof that the Mamba2 LoRA wiring is correct."
+        ]
+      }
     }
-  ]
+  ],
+  "aggregatedReview": {
+    "completedAt": "2026-05-08T17:08:34.160Z",
+    "codeReview": {
+      "summary": "Six features were implemented cleanly across the sprint. The core training launcher (run_sft.py) is well-structured with clear separation of concerns, solid config chain resolution, and a correct passthrough collator with the required -100 assertion. The wave-d retrospective doc and smoke_sft_local.yaml are accurate and well-formed. The T2.5 synthetic CLI wiring is clean. Three moderate issues require attention before the first full HPC run: (1) dataset_max_rows config key is silently ignored by ShardDataset, so the smoke local config's row cap is never enforced; (2) preflight.sh --local only skips BASE_MODEL_ID and MODEL_WEIGHTS_PATH but still requires LORA_RANK, LORA_TARGET_MODULES, and NORMALIZER_ID env vars, making it unusable without the full env setup; (3) unquoted $RESUME_ARG in submit_sft.sbatch will split incorrectly if a checkpoint path contains spaces. Two minor/info issues round out the review.",
+      "severity": "moderate",
+      "issues": [
+        {
+          "category": "bug",
+          "severity": "warning",
+          "file": "scripts/hpc/run_sft.py",
+          "line": 204,
+          "message": "ShardDataset ignores the 'dataset_max_rows' config key. smoke_sft_local.yaml sets dataset_max_rows: 100 and smoke_sft.yaml sets 1000, but ShardDataset loads every example from every .pt shard with no row limit. The config key is loaded into 'cfg' and logged but never consumed.",
+          "suggestion": "Add `max_rows = cfg.get('dataset_max_rows')` and slice `self._examples = self._examples[:max_rows]` inside ShardDataset.__init__ when the value is set. Alternatively, document explicitly that dataset_max_rows is reserved for the tokenizer step and is intentionally ignored at training time."
+        },
+        {
+          "category": "bug",
+          "severity": "warning",
+          "file": "scripts/hpc/preflight.sh",
+          "line": 101,
+          "message": "The --local flag skips BASE_MODEL_ID and MODEL_WEIGHTS_PATH checks but does NOT skip LORA_RANK, LORA_TARGET_MODULES, or NORMALIZER_ID checks (lines 101-121). Running 'bash preflight.sh --local' without those env vars set will still FAIL with 'LORA_RANK is not set' and 'NORMALIZER_ID is not set', defeating the purpose of local smoke mode.",
+          "suggestion": "Gate the LORA_RANK / NORMALIZER_ID checks under `if [[ $LOCAL -eq 0 ]]`, or add a 'local smoke defaults' block that pre-populates LORA_RANK=8 and NORMALIZER_ID=boxed_exact_or_numeric when --local is passed and the vars are unset. At minimum update the usage comment to list all vars still required in --local mode."
+        },
+        {
+          "category": "bug",
+          "severity": "warning",
+          "file": "scripts/hpc/submit_sft.sbatch",
+          "line": 132,
+          "message": "RESUME_ARG is unquoted: `$RESUME_ARG` without quotes. This relies on shell word-splitting to pass two tokens (--resume-from-checkpoint <path>). If the checkpoint path contains a space the split breaks and produces a malformed argument list.",
+          "suggestion": "Use a bash array: `RESUME_ARGS=(); [ -n \"$LATEST\" ] && RESUME_ARGS=(--resume-from-checkpoint \"$LATEST\")` then call `python scripts/hpc/run_sft.py ... \"${RESUME_ARGS[@]}\"`. This handles spaces correctly and is idiomatic bash."
+        },
+        {
+          "category": "maintainability",
+          "severity": "warning",
+          "file": "scripts/hpc/submit_sft.sbatch",
+          "line": 140,
+          "message": "Checkpoint policy runs twice: once inside run_sft.py (line 366, on args.output_dir = $RUN_DIR) and once explicitly at step 4 of submit_sft.sbatch (on $CHECKPOINT_DIR which is a subdirectory of $RUN_DIR). The double invocation is confusing and means the policy callsite is split across two files.",
+          "suggestion": "Remove the _run_checkpoint_policy() call from run_sft.py and rely solely on the explicit step 4 invocation in the sbatch, or vice versa. Document the decision in the function docstring to avoid re-introducing the other call."
+        },
+        {
+          "category": "security",
+          "severity": "info",
+          "file": "scripts/hpc/run_sft.py",
+          "line": 214,
+          "message": "torch.load() is called with weights_only=False. This allows arbitrary Python object deserialisation from .pt shards and is flagged by PyTorch as a security risk for untrusted sources.",
+          "suggestion": "If the .pt shards contain only list[dict[str, list[int]]] (as documented), switch to weights_only=True. If raw tensors are stored, confirm shards originate exclusively from tokenize_dataset.py and add a comment explaining why weights_only=False is intentional."
+        },
+        {
+          "category": "maintainability",
+          "severity": "info",
+          "file": "src/data/synthetic.py",
+          "line": 227,
+          "message": "Both the verifier path and the LLM teacher path swallow all exceptions silently with bare `except Exception: pass`. A mis-configured verifier or broken teacher function will silently skip all examples rather than surfacing the error.",
+          "suggestion": "Log the exception at WARNING level before continuing: `except Exception as exc: log.warning('Teacher failed for %s: %s', row.record.example_id, exc)`. This preserves the skip-on-error behaviour while making failures visible in smoke run output."
+        }
+      ],
+      "recommendations": [
+        "Before the first real HPC run: fix the dataset_max_rows gap (either implement it in ShardDataset or remove the key from smoke configs to avoid false expectations) and fix the unquoted $RESUME_ARG.",
+        "The --local preflight workflow needs to either auto-populate required env vars or update its documentation to list all vars that must still be exported; otherwise local smoke testing will produce confusing 'LORA_RANK is not set' failures.",
+        "Consolidate checkpoint policy invocation to a single callsite (inside run_sft.py OR in the sbatch step 4, not both) to reduce confusion about which directory is being managed.",
+        "Consider switching torch.load to weights_only=True once the shard format is confirmed to be pure Python list-of-dicts, to eliminate the PyTorch security warning.",
+        "The synthetic.py silent-exception pattern in the teacher loop should emit at least a WARNING log to make smoke run failures diagnosable from the output."
+      ]
+    },
+    "architectureReview": {
+      "summary": "The sprint delivers a coherent training pipeline across six features: a YAML-based config chain resolver, a LoRA launcher, a passthrough data collator, a preflight gate with a --local flag, and a runbook notebook. The core design decisions — separating pre-masking in tokenize_dataset.py from training in run_sft.py, using an extends: inheritance chain for configs, and keeping scripts/hpc/ launchers thin over a src/ library — are sound and well-documented. However, there is a significant naming-convention mismatch between the checkpoint management utilities (checkpoint_policy.py, resume_from_latest.py) that use a step-XXXXX pattern and what HuggingFace/trl SFTTrainer actually writes (checkpoint-XXXXX), rendering both the checkpoint rotation policy and the resume detection effectively inoperative without an adapter layer. A secondary issue is a double invocation of checkpoint_policy logic — once from within run_sft.py and once from submit_sft.sbatch Step 4 — targeting different directories, neither of which contains step-XXXXX dirs.",
+      "severity": "moderate",
+      "issues": [
+        {
+          "category": "consistency",
+          "severity": "error",
+          "file": "scripts/hpc/checkpoint_policy.py",
+          "message": "checkpoint_policy.py and resume_from_latest.py both scan for subdirectories matching ^step-(\\d+)$ but trl.SFTTrainer (via HuggingFace Trainer) saves checkpoints as checkpoint-{step}/ (e.g. checkpoint-100). The pattern will never match, so checkpoint rotation silently does nothing and resume detection always returns no checkpoint found.",
+          "suggestion": "Either update _STEP_RE = re.compile(r'^checkpoint-(\\d+)$') in both scripts to match HuggingFace Trainer output, or add a custom TrainerCallback that renames checkpoint-N dirs to step-N after each save_steps event. Prefer the former since it eliminates the rename side-effect."
+        },
+        {
+          "category": "coupling",
+          "severity": "error",
+          "file": "scripts/hpc/submit_sft.sbatch",
+          "message": "resume_from_latest.py is called on '$RUN_DIR/checkpoints' (line 124) but run_sft.py is told --output-dir '$RUN_DIR' (line 131), so the Trainer writes checkpoints to $RUN_DIR/checkpoint-* while the resume scanner looks in $RUN_DIR/checkpoints/. If $CHECKPOINT_ROOT differs from $RUN_ROOT, $CHECKPOINT_DIR diverges further. The resume path is structurally guaranteed to find nothing on first invocation.",
+          "suggestion": "Pass a consistent checkpoint sub-directory to both run_sft.py (--output-dir \"$CHECKPOINT_DIR\") and resume_from_latest.py, or make resume_from_latest.py accept the same $RUN_DIR and scan one level down."
+        },
+        {
+          "category": "pattern",
+          "severity": "warning",
+          "file": "scripts/hpc/run_sft.py",
+          "message": "_run_checkpoint_policy() is called inside run_sft.py at line 366 with --execute (always active), and submit_sft.sbatch Step 4 independently calls checkpoint_policy.py on $CHECKPOINT_DIR. These two calls target different directories ($RUN_DIR vs $CHECKPOINT_DIR) and both will silently find zero step-XXXXX dirs. The duplication obscures which layer owns checkpoint lifecycle management.",
+          "suggestion": "Remove the _run_checkpoint_policy() call from run_sft.py main() and let the orchestrating sbatch script own checkpoint lifecycle as a separate explicit step. A launcher should not call post-processing that the orchestrator also calls."
+        },
+        {
+          "category": "abstraction",
+          "severity": "warning",
+          "file": "scripts/hpc/run_sft.py",
+          "message": "PassthroughCollator pads input_ids with token ID 0 hardcoded (line 259) instead of the tokenizer's pad_token_id. The tokenizer is not injected into the collator. Padding with 0 is harmless when attention_mask correctly masks those positions, but it violates the principle of using the model's canonical pad token and can cause confusion if 0 happens to be a real vocab token.",
+          "suggestion": "Accept tokenizer (or just pad_token_id: int) as a constructor argument to PassthroughCollator and use it for input_ids padding."
+        },
+        {
+          "category": "consistency",
+          "severity": "warning",
+          "file": "configs/smoke_sft_local.yaml",
+          "message": "smoke_sft_local.yaml sets target_modules: [q_proj, k_proj, v_proj, o_proj] (attention heads, correct for Qwen2.5-0.5B-Instruct) while lora_baseline.yaml uses [in_proj, out_proj, up_proj, down_proj] (Mamba2 SSM modules for the actual competition model). The divergence is architecturally correct but undocumented inline; a reader may assume local smoke validates the same LoRA wiring as production.",
+          "suggestion": "Add a comment to smoke_sft_local.yaml: '# target_modules override for Qwen2.5 attention architecture; production uses in_proj/out_proj/up_proj/down_proj for Mamba2.'"
+        },
+        {
+          "category": "pattern",
+          "severity": "warning",
+          "file": "scripts/hpc/run_sft.py",
+          "message": "Both run_sft.py and tokenize_dataset.py mutate sys.path at module import time (sys.path.insert(0, str(_REPO_ROOT))). This is a side-effect that changes the import environment for all downstream code in the process and can cause hard-to-diagnose import shadowing if the repo root contains a module that conflicts with an installed package.",
+          "suggestion": "Use PYTHONPATH=$REPO_ROOT in the shell environment (set in submit_sft.sbatch or the venv activation) rather than mutating sys.path at import time."
+        },
+        {
+          "category": "abstraction",
+          "severity": "warning",
+          "file": "scripts/hpc/run_sft.py",
+          "message": "load_config() has no schema validation after resolving the extends: chain. Required keys (base_model, lora_r, target_modules) are accessed with cfg.get() with silent fallbacks, so a misconfigured or broken extends chain produces a confusing runtime error deep in model loading rather than a fast-fail at config parse time.",
+          "suggestion": "Add a lightweight validation step after load_config() that asserts required keys are present and non-empty before the expensive model download begins."
+        },
+        {
+          "category": "scalability",
+          "severity": "info",
+          "file": "scripts/hpc/run_sft.py",
+          "message": "ShardDataset loads all .pt shards fully into CPU memory in __init__ (self._examples is a flat Python list). For the current smoke scale (100-1000 examples) this is fine, but at full dataset scale the memory footprint could be significant before training even begins.",
+          "suggestion": "For future scale, consider lazy shard loading: hold a list of (shard_path, offset) pointers and load one shard at a time in __getitem__. This is a known-future-requirement, not a current blocker."
+        },
+        {
+          "category": "pattern",
+          "severity": "info",
+          "file": "scripts/hpc/run_sft.py",
+          "message": "torch.load(..., weights_only=False) at line 214 silences PyTorch's pickle-safety warning. In this closed pipeline (shards produced by the same repo) this is safe, but it disables the security guard that catches malicious .pt files if the data directory were ever populated from an external source.",
+          "suggestion": "Add an inline comment documenting the assumption: '# weights_only=False: shards are produced by this repo; safe to unpickle.' If the data directory is ever shared with external write access, switch to weights_only=True with appropriate safe_globals registration."
+        }
+      ],
+      "recommendations": [
+        "Fix the step-XXXXX vs checkpoint-XXXXX naming mismatch as the highest priority — checkpoint rotation and resume detection are both silently broken, meaning each job starts from scratch and disk accumulates unbounded checkpoints.",
+        "Consolidate checkpoint lifecycle ownership into submit_sft.sbatch exclusively; remove the _run_checkpoint_policy() call from run_sft.py to eliminate dual-invocation on mismatched directories.",
+        "Wire a consistent output directory through the whole sbatch pipeline: pass --output-dir \"$CHECKPOINT_DIR\" to run_sft.py and point resume_from_latest.py at the same directory so all three steps (train, resume, rotate) share one path.",
+        "Inject pad_token_id into PassthroughCollator at construction time rather than hardcoding 0, to make the collator's contract explicit and safe for any tokenizer.",
+        "Replace sys.path mutation in both launcher scripts with PYTHONPATH= in the sbatch environment; this is already the HPC convention and removes the import-shadowing risk.",
+        "Add a config schema validation step (required keys + type assertions) immediately after load_config() in run_sft.py so misconfiguration fails fast before the model download begins.",
+        "Add an inline comment to smoke_sft_local.yaml explaining the target_modules divergence from production to prevent a future reader from treating smoke success as proof that the Mamba2 LoRA wiring is correct."
+      ]
+    },
+    "overallAssessment": "Overall assessment: moderate. Found 15 issue(s) (2 error(s), 9 warning(s)) across code quality and architecture reviews."
+  },
+  "completedAt": "2026-05-08T17:08:34.160Z"
 }

@@ -1,26 +1,15 @@
-## Feature 4 Complete: SFT Loss Masking
+T1.3 complete.
 
-### Files Created
-- src/training/__init__.py — empty package marker
-- src/training/sft_trainer.py — implements apply_loss_mask() and IGNORE_INDEX
-- tests/training/__init__.py — empty package marker
-- tests/training/test_masking.py — 4 tests for loss masking behavior
+Task A — configs/smoke_sft_local.yaml:
+  Created with header "LOCAL SMOKE ONLY — NOT FOR SUBMISSION", extends configs/smoke_sft.yaml,
+  overrides: base_model=Qwen/Qwen2.5-0.5B-Instruct, lora_r=8, lora_alpha=16,
+  target_modules=[q_proj,k_proj,v_proj,o_proj], dataset_max_rows=100, max_steps=20, save_steps=10.
 
-### Implementation Summary
-apply_loss_mask(input_ids, labels, tokenizer, mask_role='user') -> list[int]:
-- Reads tokenizer.role_start_ids: dict[str, list[int]] to find turn boundaries
-- Scans input_ids for each role's marker token sequence using _find_subsequence()
-- Sets all non-assistant segment positions to IGNORE_INDEX (-100)
-- Raises ValueError if no assistant turn is found
-- Returns a new list (immutable — does not mutate input labels)
+Task B — scripts/hpc/preflight.sh --local flag:
+  Added LOCAL=0 variable, --local to argument parser and usage string.
+  Section 1: skips frozen BASE_MODEL_ID equality check when LOCAL=1 (logs current value instead).
+  Section 3: skips model weights path check entirely when LOCAL=1.
+  Sections 2, 4, 5, 6 (CUDA, dataset SHA256, disk, packages) run unconditionally.
+  Default behavior (no --local) is unchanged.
 
-### Tests (all pass)
-- test_user_tokens_masked: user segment positions == -100
-- test_assistant_tokens_unmasked: assistant segment labels unchanged
-- test_system_tokens_masked: system segment positions == -100
-- test_all_masked_raises: ValueError when no assistant marker in input_ids
-
-### Verification
-- pytest tests/training/test_masking.py: 4 passed
-- Full suite: 224 passed, 1 skipped, 0 failures
-- Commit: feat(training): implement apply_loss_mask for SFT loss masking
+Commit: 7d6ebb3 feat(hpc): add smoke_sft_local.yaml and preflight --local flag
